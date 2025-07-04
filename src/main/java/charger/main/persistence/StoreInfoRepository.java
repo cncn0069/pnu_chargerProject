@@ -4,10 +4,11 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 
 import charger.main.domain.StoreInfo;
 
-public interface StoreInfoRepository extends JpaRepository<StoreInfo, String>{
+public interface StoreInfoRepository extends JpaRepository<StoreInfo, String>,QuerydslPredicateExecutor<StoreInfo>{
 
 	@Query(
 			value ="SELECT si.stat_id FROM store_info si"

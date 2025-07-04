@@ -107,6 +107,19 @@
 			 <artifactId>java-jwt</artifactId>
 			 <version>4.4.0</version>
 		 </dependency>
+		<!-- https://mvnrepository.com/artifact/io.github.openfeign.querydsl/querydsl-apt -->
+		<dependency>
+		    <groupId>io.github.openfeign.querydsl</groupId>
+		    <artifactId>querydsl-apt</artifactId>
+		    <version>7.0</version>
+		     <classifier>jpa</classifier>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/io.github.openfeign.querydsl/querydsl-jpa -->
+		<dependency>
+		    <groupId>io.github.openfeign.querydsl</groupId>
+		    <artifactId>querydsl-jpa</artifactId>
+		    <version>7.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>
