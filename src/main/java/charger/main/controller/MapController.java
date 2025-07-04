@@ -13,6 +13,7 @@ import charger.main.dto.EvStoreResultDto;
 import charger.main.dto.MapInfoResultDto;
 import charger.main.dto.StoreResultsDto;
 import charger.main.service.MapService;
+import jakarta.validation.Valid;
 
 @RestController
 public class MapController {
@@ -21,7 +22,9 @@ public class MapController {
 	private MapService mapService;
 	
 	@PostMapping("/map/post/stations")
-	public List<StoreResultsDto> getDefaultStations(@RequestBody MapInfoResultDto dto) {
+	public List<StoreResultsDto> getDefaultStations(
+			@Valid
+			@RequestBody MapInfoResultDto dto) {
 		//위도 경도로 주위 충전소 찾기getMapInfo
 		List<StoreResultsDto> result = mapService.getEVStores(dto); 
 		
@@ -31,7 +34,9 @@ public class MapController {
 	}
 	
 	@PostMapping("/map/post/setMap")
-	public Map<String,List<EvStoreResultDto>> setMapInfo(@RequestBody CoorDinatesDto dto) {
+	public Map<String,List<EvStoreResultDto>> setMapInfo(
+			@Valid
+			@RequestBody CoorDinatesDto dto) {
 		//위도 경도로 주위 충전소 찾기
 		Map<String,List<EvStoreResultDto>> result = mapService.setEvStores(dto); 
 		
