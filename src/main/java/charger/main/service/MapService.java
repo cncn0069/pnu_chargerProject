@@ -1,5 +1,6 @@
 package charger.main.service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -7,21 +8,30 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.management.AttributeNotFoundException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import charger.main.domain.Charger;
 import charger.main.domain.ConnectorTypes;
 import charger.main.domain.StoreInfo;
+import charger.main.domain.embeded.ChargerId;
 import charger.main.dto.CoorDinatesDto;
 import charger.main.dto.EvStoreResultDto;
 import charger.main.dto.MapInfoResultDto;
 import charger.main.dto.StoreResultsDto;
+import charger.main.dto.TimeSlotDTO;
+import charger.main.persistence.ChargerRepository;
 import charger.main.persistence.StoreInfoRepository;
+import charger.main.persistence.TimeSlotRepository;
 import charger.main.util.StoreUtil;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 public class MapService {
 	
@@ -30,6 +40,12 @@ public class MapService {
 	
 	@Autowired
 	private StoreInfoRepository infoRepo;
+	
+	@Autowired
+	private ChargerRepository chargerRepo;
+	
+	@Autowired
+	private TimeSlotRepository timeSlotRepo;
 	
 	@Value("${kakao.api.key}")
 	private String KAKAO_API_KEY;
@@ -62,13 +78,44 @@ public class MapService {
 			//chgerType
 			//충전기 타입 조건 사이즈가 0 이 아닐때
 			if(dto.getMapQueryDto().getChgerType().size() != 0) {
+				Set<String> types = new HashSet<>();
 				for(String chgerType:dto.getMapQueryDto().getChgerType()) {
 					//chgerType이 존재하지 않는다면
-					if(!resultDto.getEnabledCharger().contains(chgerType)) {
-						flag = true;
-						break;
+					switch(chgerType) {
+						case "DC차데모":
+							types.add("01");
+							types.add("03");
+							types.add("05");
+							types.add("06");
+							break;
+						case "AC완속":
+							types.add("02");
+							break;
+						case "DC콤보":
+							types.add("04");
+							types.add("05");
+							types.add("06");
+							types.add("10");
+							break;
+						case "AC3상":
+							types.add("03");
+							types.add("06");
+							types.add("07");
+						case "콤보(완속)":
+							types.add("08");
+						case "NACS":
+							types.add("09");
+							types.add("10");
 					}
 				}
+				
+				for(String type : types) {
+					flag = true;
+					if(resultDto.getEnabledCharger().contains(type)) {
+						flag = false;
+						break;
+					}
+				}				
 			}
 			//output
 			Map<String, EvStoreResultDto> chargerInfo = resultDto.getChargerInfo();
@@ -79,7 +126,37 @@ public class MapService {
 					if(dto.getMapQueryDto().getOutputMin() > output || dto.getMapQueryDto().getOutputMax() < output) {
 						flag = true;
 					}
+					try {
+						StoreInfo storeInfo = infoRepo.findById(chargerInfo.get(keySet).getStatId()).orElseThrow(()->new AttributeNotFoundException());
+						ChargerId chargerId = new ChargerId();
+						chargerId.setStatId(storeInfo.getStatId());
+						chargerId.setChgerId(chargerInfo.get(keySet).getChgerId());
+						
+						
+						//충전기 정보가 등록안되어있으면 등록하기
+						if(chargerRepo.findById(chargerId).isEmpty()){
+							Charger charger = new Charger();
+							charger.setChgerType(chargerInfo.get(keySet).getChgerType());
+							charger.setOutput(Integer.parseInt(chargerInfo.get(keySet).getOutput()));
+							charger.setChargerId(chargerId);
+							charger.setStoreInfo(storeInfo);
+							
+							chargerRepo.save(charger);
+						}
+						
+						//24시간 타임 슬롯 만들기
+						//이건 예약 과정에 따로 만드는게 좋을듯?
+						//새로운 예약이 만들어지는과정
+						//여기서 하면 date등의 자료를 또 따로 받아야하는데 말이 안됨
+					
+					} catch (AttributeNotFoundException e) {
+						// TODO Auto-generated catch block
+						log.info("존재하지 않는 storeInfo");
+						e.printStackTrace();
+					}
 				}
+							
+				
 			}
 			//chgerType이 존재하지 않는다면
 			if(flag) {
@@ -90,6 +167,21 @@ public class MapService {
 		}
 		return results;
 	}
+	
+//	public List<TimeSlotDTO> getTimeSlot(String stat_id, String chger_id,LocalDate date){
+//		
+//		//timeSlot이 해당하는 날에 타임슬롯이 있는지 없는지 확인
+//		StoreInfo storeInfo = infoRepo.findById(stat_id).orElseThrow(()->new AttributeNotFoundException());
+//		ChargerId chargerId = new ChargerId();
+//		chargerId.setChgerId(chger_id);
+//		chargerId.setStatId(storeInfo.getStatId());
+//		
+//		Charger charger = new Charger();
+//		charger.setChargerId(chargerId);
+//		charger.set
+//		
+//		if(timeSlotRepo.findByChargerAndDate(null, date)
+//	}
 	
 	//부산시도 코드로 부산시의 모든 전기차 충전소 위치 저장
 	public Map<String,List<EvStoreResultDto>> setEvStores(CoorDinatesDto dto) {

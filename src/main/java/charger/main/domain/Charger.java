@@ -2,6 +2,7 @@ package charger.main.domain;
 
 import java.io.Serializable;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.EmbeddedId;
@@ -30,9 +31,10 @@ import charger.main.domain.embeded.ChargerId;
 public class Charger {
 	@EmbeddedId
 	private ChargerId chargerId;
-	
+	private String chgerType;
+	private Integer output;
 	@MapsId("statId")
 	@ManyToOne
-	@JoinColumn(name = "StatId")
+	@JoinColumn(name = "stat_id")
 	private StoreInfo storeInfo;
 }
