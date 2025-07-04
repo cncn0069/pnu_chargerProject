@@ -3,13 +3,9 @@ package charger.main.util;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.URI;
 import java.net.URL;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -18,27 +14,32 @@ import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
-import org.springframework.web.util.UriBuilder;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 
-import charger.main.domain.ConnectorTypes;
-import charger.main.domain.StoreInfo;
+import charger.main.domain.QStoreInfo;
 import charger.main.dto.CoorDinatesDto;
 import charger.main.dto.EvStoreResultDto;
 import charger.main.dto.ItemWrapper;
 import charger.main.dto.KaKaoResultDto;
+import charger.main.dto.MapInfoResultDto;
+import charger.main.dto.MapQueryDto;
+import charger.main.dto.StoreResultsDto;
 import charger.main.persistence.StoreInfoRepository;
 import charger.main.util.GeoUtil.BoundingBox;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
@@ -63,6 +64,9 @@ public class StoreUtil {
 	
 	@Value("${dd.api.key.decode}")
 	private String DD_API_KEY_DECODE;
+	
+	@PersistenceContext
+	private EntityManager em;
 	
 	public StoreUtil(WebClient.Builder webClientBuilder,String kakaoApiKey,String ddApiKey,String ddApiKeyDecode) {
 	        this.webClientBuilder = webClientBuilder;
@@ -100,13 +104,66 @@ public class StoreUtil {
 	}
 	
 	
-	public List<String> getMapInfo(CoorDinatesDto dto){
+	public List<String> getMapInfo(MapInfoResultDto MapDto){
+		CoorDinatesDto dto = MapDto.getCoorDinatesDto();
 		
 		List<String> codes = new ArrayList<>();
 		GeoUtil geoUtil = new GeoUtil();
 		BoundingBox bb = geoUtil.getBoundingBox(dto.getLat(), dto.getLon(), dto.getRadius());
-		codes = infoRepo.getStatIdByLatLng(dto.getLat(), dto.getLon(), dto.getRadius(),bb.getMinLng(),bb.getMaxLng(),bb.getMinLat(),bb.getMaxLat());	
-		return codes;
+		
+		
+		JPAQueryFactory queryFactory = new JPAQueryFactory(em);
+		
+		BooleanBuilder builder = new BooleanBuilder();
+		QStoreInfo qinfo = QStoreInfo.storeInfo;
+		MapQueryDto mqDto = MapDto.getMapQueryDto();
+		
+		if(mqDto.isUseMap()) {
+			builder.and(qinfo.lng.between(bb.getMinLng(), bb.getMaxLng()));
+			builder.and(qinfo.lat.between(bb.getMinLat(), bb.getMaxLat()));
+			BooleanExpression distanceCondition = Expressions.booleanTemplate(
+				    "ST_Distance_Sphere(POINT({0}, {1}), POINT({2}, {3})) <= {4}",
+				    qinfo.lng, qinfo.lat, dto.getLon(), dto.getLat(), ((double)dto.getRadius())
+				);
+
+			builder.and(distanceCondition);
+		}
+		
+		if(mqDto.isLimitYn()) {
+			//접근 제한이 없는 곳을 고른다.
+			//false이면 제한이 없는곳
+			builder.and(qinfo.limitYn.eq(false));
+		}
+		
+		if(mqDto.isParkingFree()) {
+			//주차요금이 없는 곳을 고른다.
+			builder.and(qinfo.parkingFree.eq(true));
+		}
+		
+		//busId와 같은지
+		if(mqDto.getBusiId().size() != 0) {
+			for(String busiId:mqDto.getBusiId()) {
+				builder.and(qinfo.busiId.in(busiId));
+			}
+		}
+		
+		//이후에 추가
+//		for(String chagerType:mqDto.getChgerType()) {
+//			builder.or(qinfo.busiNm.like(chagerType));
+//		}
+		//output, canUse, chgerType 는 MapService에서 처리 쪽에서 따로 처리
+		
+		List<String> results = queryFactory
+				.select(qinfo.statId)
+				.from(qinfo)
+				.where(builder)
+				.fetch();
+		
+//		for(String result: results) {
+//			log.info("요구 코드 : " + result);
+//		}
+		
+		return results;
 	}
 	
 	//Map<String,KaKaoResultDto>
@@ -268,6 +325,103 @@ public class StoreUtil {
 			}
 		}
 		return result;
+	}
+	
+	
+	public StoreResultsDto getStoreResultsDto(List<EvStoreResultDto> item) {
+		
+			
+		
+		
+			StoreResultsDto stDto = new StoreResultsDto();
+			stDto.setStatNm(item.get(0).getStatNm());
+			stDto.setStatId(item.get(0).getStatId());
+			stDto.setAddr(item.get(0).getAddr());
+			stDto.setLat(item.get(0).getLat());
+			stDto.setLng(item.get(0).getLng());
+			stDto.setParkingFree(item.get(0).getParkingFree().equals("Y")?true:false);
+			stDto.setLimitYn(item.get(0).getLimitYn().equals("Y") ?true:false);
+			stDto.setBusiId(item.get(0).getBusiId());
+			stDto.setBusiNm(item.get(0).getBusiNm());
+			int totalChargeNum = 0;
+			int chargeNum = 0;
+			int totalFastNum = 0;
+			int chargeFastNum = 0;
+			int totalSlowNum = 0;
+			int chargeSlowNum = 0;
+			int totalMidNum = 0;
+			int chargeMidNum = 0;
+			Set<String> enabledCharger = new HashSet<>();
+			Map<String, EvStoreResultDto> chargerInfo = new HashMap<>();
+			for(EvStoreResultDto evDto: item) {
+				if(evDto == null)
+					continue;
+				
+				totalChargeNum++;
+				chargerInfo.put(evDto.getChgerId(), evDto);
+				if(evDto.getStat().equals("2")){
+					chargeNum++;
+					switch (evDto.getChgerType()) {
+					case "01":
+						chargeFastNum++;
+						break;
+					case "02":
+						chargeSlowNum++;
+						break;
+					case "03":
+						chargeFastNum++;
+						break;
+					case "04":
+						chargeFastNum++;
+						break;
+					case "05":
+						chargeFastNum++;
+						break;
+					case "06":
+						chargeFastNum++;
+						break;
+					case "07":
+						chargeSlowNum++;
+						break;
+					case "08":
+						chargeSlowNum++;
+						break;
+					case "09":
+						chargeFastNum++;
+						break;
+					case "10":
+						chargeFastNum++;
+						break;
+					
+				}
+				}
+				enabledCharger.add(evDto.getOutput());
+				
+	
+				int output = Integer.parseInt(evDto.getOutput().equals("")? "0": evDto.getOutput());
+				
+				if(output <= 7) {
+					totalSlowNum++;
+				}else if(output <= 30) {
+					totalMidNum++;
+				}else if(output <= 100) {
+					totalFastNum++;
+				}else if(output > 100) {
+					totalFastNum++;
+				}
+			}
+	
+			stDto.setChargerInfo(chargerInfo);
+			stDto.setChargeFastNum(chargeFastNum);
+			stDto.setChargeMidNum(chargeMidNum);
+			stDto.setChargeSlowNum(chargeSlowNum);
+			stDto.setTotalFastNum(totalFastNum);
+			stDto.setTotalMidNum(totalMidNum);
+			stDto.setTotalSlowNum(totalSlowNum);
+			stDto.setTotalChargeNum(totalChargeNum);
+			stDto.setChargeNum(chargeNum);
+			stDto.setEnabledCharger(enabledCharger);
+		return stDto;
 	}
 }
 //Map<String,List<EvStoreResultDto>> result = new HashMap<>();

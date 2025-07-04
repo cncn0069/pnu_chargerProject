@@ -29,8 +29,15 @@ public class StoreResultsDto {
 	private Boolean parkingFree;
 	private Boolean limitYn;
 	private int totalChargeNum;
+	int totalFastNum;
+	int totalSlowNum;
+	int chargeFastNum;
+	int chargeSlowNum;
+	int totalMidNum;
+	int chargeMidNum;
 	private int chargeNum;
 	private Set<String> enabledCharger;
 	private String busiId;
 	private String busiNm;
+	Map<String, EvStoreResultDto> chargerInfo;
 }

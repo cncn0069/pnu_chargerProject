@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import charger.main.dto.CoorDinatesDto;
 import charger.main.dto.EvStoreResultDto;
+import charger.main.dto.MapInfoResultDto;
 import charger.main.dto.StoreResultsDto;
 import charger.main.service.MapService;
 
@@ -20,7 +21,7 @@ public class MapController {
 	private MapService mapService;
 	
 	@PostMapping("/map/post/stations")
-	public List<StoreResultsDto> getDefaultStations(@RequestBody CoorDinatesDto dto) {
+	public List<StoreResultsDto> getDefaultStations(@RequestBody MapInfoResultDto dto) {
 		//위도 경도로 주위 충전소 찾기getMapInfo
 		List<StoreResultsDto> result = mapService.getEVStores(dto); 
 		
@@ -38,4 +39,9 @@ public class MapController {
 		
 		return result;
 	}
+	
+//	@PostMapping("/map/post/stations/filter")
+//	public List<StoreResultsDto> getFilterStations(@RequestBody CoorDinatesDto dto){
+//		
+//	}
 }

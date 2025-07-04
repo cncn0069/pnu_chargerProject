@@ -1,25 +1,22 @@
 package charger.main.service;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.resource.NoResourceFoundException;
 
 import charger.main.domain.ConnectorTypes;
 import charger.main.domain.StoreInfo;
 import charger.main.dto.CoorDinatesDto;
 import charger.main.dto.EvStoreResultDto;
-import charger.main.dto.KaKaoResultDto;
+import charger.main.dto.MapInfoResultDto;
 import charger.main.dto.StoreResultsDto;
 import charger.main.persistence.StoreInfoRepository;
 import charger.main.util.StoreUtil;
@@ -46,41 +43,51 @@ public class MapService {
 	@Autowired
 	private StoreUtil util;
 	
-	public List<StoreResultsDto> getEVStores(CoorDinatesDto dto) {
+	public List<StoreResultsDto> getEVStores(MapInfoResultDto dto) {
 		List<String> codes = util.getMapInfo(dto);
 		Mono<List<List<EvStoreResultDto>>> kepcoResults = util.getKepco(codes.stream().collect(Collectors.toSet()));
 		
 		List<List<EvStoreResultDto>> items = kepcoResults.block();
-		
 		List<StoreResultsDto> results = new ArrayList<>();
 		
 		for(List<EvStoreResultDto> item:items) {
-			StoreResultsDto stDto = new StoreResultsDto();
-			stDto.setStatNm(item.get(0).getStatNm());
-			stDto.setStatId(item.get(0).getStatId());
-			stDto.setAddr(item.get(0).getAddr());
-			stDto.setLat(item.get(0).getLat());
-			stDto.setLng(item.get(0).getLng());
-			stDto.setParkingFree(item.get(0).getParkingFree().equals("Y")?true:false);
-			stDto.setLimitYn(item.get(0).getLimitYn().equals("Y") ?true:false);
-			stDto.setBusiId(item.get(0).getBusiId());
-			stDto.setBusiNm(item.get(0).getBusiNm());
-			int totalChargeNum = 0;
-			int chargeNum = 0;
-			Set<String> enabledCharger = new HashSet<>();
-			for(EvStoreResultDto evDto: item) {
-				totalChargeNum++;
-				if(evDto.getStat().equals("2")){
-					chargeNum++;
-				}
-				enabledCharger.add(evDto.getChgerType());
+			StoreResultsDto resultDto = util.getStoreResultsDto(item);
+			//canuse
+			// 사용가능한 조건이 걸려있고 사용가능한 충전기 개수도 0일 때
+			if(dto.getMapQueryDto().isCanUse() && resultDto.getTotalChargeNum() < 0) {
+				continue;
 			}
-			stDto.setTotalChargeNum(totalChargeNum);
-			stDto.setChargeNum(chargeNum);
-			stDto.setEnabledCharger(enabledCharger);
-			results.add(stDto);
+			
+			boolean flag = false;
+			//chgerType
+			//충전기 타입 조건 사이즈가 0 이 아닐때
+			if(dto.getMapQueryDto().getChgerType().size() != 0) {
+				for(String chgerType:dto.getMapQueryDto().getChgerType()) {
+					//chgerType이 존재하지 않는다면
+					if(!resultDto.getEnabledCharger().contains(chgerType)) {
+						flag = true;
+						break;
+					}
+				}
+			}
+			//output
+			Map<String, EvStoreResultDto> chargerInfo = resultDto.getChargerInfo();
+			for(String keySet: chargerInfo.keySet()) {
+				if(!chargerInfo.get(keySet).getOutput().equals("")) {
+					int output = Integer.parseInt(chargerInfo.get(keySet).getOutput());
+					//output이 범위 밖을 벗어난다면
+					if(dto.getMapQueryDto().getOutputMin() > output || dto.getMapQueryDto().getOutputMax() < output) {
+						flag = true;
+					}
+				}
+			}
+			//chgerType이 존재하지 않는다면
+			if(flag) {
+				continue;
+			}
+			
+			results.add(resultDto);
 		}
-		
 		return results;
 	}
 	
