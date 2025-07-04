@@ -3,6 +3,7 @@ package charger.main.domain;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import io.micrometer.common.lang.Nullable;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -37,7 +38,6 @@ public class Member {
 	private String phoneNumber;
 	@Column(nullable = false)
 	private String email;
-	@Column(nullable = false)
 	private String sex;
 	@Enumerated(EnumType.STRING)
 	@ElementCollection(fetch = FetchType.EAGER)

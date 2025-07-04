@@ -391,7 +391,7 @@ public class StoreUtil {
 					
 				}
 				}
-				enabledCharger.add(evDto.getOutput());
+				enabledCharger.add(evDto.getChgerType());
 				
 	
 				int output = Integer.parseInt(evDto.getOutput().equals("")? "0": evDto.getOutput());
