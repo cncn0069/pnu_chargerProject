@@ -54,7 +54,7 @@ public class MapService {
 			StoreResultsDto resultDto = util.getStoreResultsDto(item);
 			//canuse
 			// 사용가능한 조건이 걸려있고 사용가능한 충전기 개수도 0일 때
-			if(dto.getMapQueryDto().isCanUse() && resultDto.getTotalChargeNum() < 0) {
+			if(dto.getMapQueryDto().getCanUse() && resultDto.getTotalChargeNum() < 0) {
 				continue;
 			}
 			

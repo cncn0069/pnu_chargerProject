@@ -2,6 +2,7 @@ package charger.main.dto;
 
 import java.util.Set;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,6 +19,8 @@ import lombok.ToString;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MapInfoResultDto {
+	@Valid
 	MapQueryDto mapQueryDto;
+	@Valid
 	CoorDinatesDto coorDinatesDto;
 }

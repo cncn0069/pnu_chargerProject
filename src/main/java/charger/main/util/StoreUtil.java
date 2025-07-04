@@ -103,6 +103,67 @@ public class StoreUtil {
 		return result;
 	}
 	
+	//Map<String,KaKaoResultDto>
+		public Set<String> getSetIds(List<String> dtos){
+			Set<String> statids = new HashSet<>();
+			Gson gson = new Gson();
+			String serviceKey = DD_API_KEY;
+			
+			try {
+
+				for(String code:dtos) {
+						String baseUrl = "http://apis.data.go.kr/B552584/EvCharger/getChargerStatus";
+				        
+				        if(code.equals("")) {
+				        	continue;
+				        }
+				       
+				        String query = "page=1&perPage=9999&" 
+				        + "&serviceKey="
+				        + serviceKey
+				        + "&zcode="
+				        + code.substring(0,2)
+//				        + "&zscode="
+//				        + code.substring(0,5)
+				        + "&dataType="
+				        + "JSON";
+//				        + "&statId="
+//				        + "CV003367";			       
+				        
+				        URL url = new URL(baseUrl + "?" + query);
+				        log.info("지번코드" + code.substring(0,5));
+				        log.info("요청 주소 : " + url.toString());
+				        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+				        conn.setRequestMethod("GET");
+				        int responseCode = conn.getResponseCode();
+				        BufferedReader br = new BufferedReader(
+				            new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8)
+				        );
+
+				        StringBuilder sb = new StringBuilder();
+				        String line;
+				        while ((line = br.readLine()) != null) {
+				            sb.append(line);
+				        }
+				        br.close();
+			        JsonObject obj = JsonParser.parseString(sb.toString()).getAsJsonObject();
+			        JsonArray infos = obj.getAsJsonObject("items").getAsJsonArray("item");
+			        
+			        //이제 여기서 statId를 다 뽑아야함
+			        //똑같은 statId를 가진 데이터도 있었음 --> set으로 해결
+			        for(JsonElement element: infos) {
+			        	EvStoreResultDto dto = gson.fromJson(element, EvStoreResultDto.class);
+			        	statids.add(dto.getStatId());
+			        }
+				}
+				
+			} catch (Exception e) {
+				// TODO: handle exception
+				log.info("statID 가져오기 실패");
+			}
+			
+			return statids;
+		}
 	
 	public List<String> getMapInfo(MapInfoResultDto MapDto){
 		CoorDinatesDto dto = MapDto.getCoorDinatesDto();
@@ -117,8 +178,22 @@ public class StoreUtil {
 		BooleanBuilder builder = new BooleanBuilder();
 		QStoreInfo qinfo = QStoreInfo.storeInfo;
 		MapQueryDto mqDto = MapDto.getMapQueryDto();
-		
-		if(mqDto.isUseMap()) {
+		if(mqDto.getLimitYn()) {
+			//접근 제한이 없는 곳을 고른다.
+			//false이면 제한이 없는곳
+			builder.and(qinfo.limitYn.eq(false));
+		}
+		if(mqDto.getParkingFree()) {
+			//주차요금이 없는 곳을 고른다.
+			builder.and(qinfo.parkingFree.eq(true));
+		}
+		//busId와 같은지
+		if(mqDto.getBusiId().size() != 0) {
+			for(String busiId:mqDto.getBusiId()) {
+				builder.and(qinfo.busiId.in(busiId));
+			}
+		}
+		if(mqDto.getUseMap()) {
 			builder.and(qinfo.lng.between(bb.getMinLng(), bb.getMaxLng()));
 			builder.and(qinfo.lat.between(bb.getMinLat(), bb.getMaxLat()));
 			BooleanExpression distanceCondition = Expressions.booleanTemplate(
@@ -128,25 +203,6 @@ public class StoreUtil {
 
 			builder.and(distanceCondition);
 		}
-		
-		if(mqDto.isLimitYn()) {
-			//접근 제한이 없는 곳을 고른다.
-			//false이면 제한이 없는곳
-			builder.and(qinfo.limitYn.eq(false));
-		}
-		
-		if(mqDto.isParkingFree()) {
-			//주차요금이 없는 곳을 고른다.
-			builder.and(qinfo.parkingFree.eq(true));
-		}
-		
-		//busId와 같은지
-		if(mqDto.getBusiId().size() != 0) {
-			for(String busiId:mqDto.getBusiId()) {
-				builder.and(qinfo.busiId.in(busiId));
-			}
-		}
-		
 		//이후에 추가
 //		for(String chagerType:mqDto.getChgerType()) {
 //			builder.or(qinfo.busiNm.like(chagerType));
@@ -166,67 +222,7 @@ public class StoreUtil {
 		return results;
 	}
 	
-	//Map<String,KaKaoResultDto>
-	public Set<String> getSetIds(List<String> dtos){
-		Set<String> statids = new HashSet<>();
-		Gson gson = new Gson();
-		String serviceKey = DD_API_KEY;
-		
-		try {
-
-			for(String code:dtos) {
-					String baseUrl = "http://apis.data.go.kr/B552584/EvCharger/getChargerStatus";
-			        
-			        if(code.equals("")) {
-			        	continue;
-			        }
-			       
-			        String query = "page=1&perPage=9999&" 
-			        + "&serviceKey="
-			        + serviceKey
-			        + "&zcode="
-			        + code.substring(0,2)
-//			        + "&zscode="
-//			        + code.substring(0,5)
-			        + "&dataType="
-			        + "JSON";
-//			        + "&statId="
-//			        + "CV003367";			       
-			        
-			        URL url = new URL(baseUrl + "?" + query);
-			        log.info("지번코드" + code.substring(0,5));
-			        log.info("요청 주소 : " + url.toString());
-			        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-			        conn.setRequestMethod("GET");
-			        int responseCode = conn.getResponseCode();
-			        BufferedReader br = new BufferedReader(
-			            new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8)
-			        );
-
-			        StringBuilder sb = new StringBuilder();
-			        String line;
-			        while ((line = br.readLine()) != null) {
-			            sb.append(line);
-			        }
-			        br.close();
-		        JsonObject obj = JsonParser.parseString(sb.toString()).getAsJsonObject();
-		        JsonArray infos = obj.getAsJsonObject("items").getAsJsonArray("item");
-		        
-		        //이제 여기서 statId를 다 뽑아야함
-		        //똑같은 statId를 가진 데이터도 있었음 --> set으로 해결
-		        for(JsonElement element: infos) {
-		        	EvStoreResultDto dto = gson.fromJson(element, EvStoreResultDto.class);
-		        	statids.add(dto.getStatId());
-		        }
-			}
-			
-		} catch (Exception e) {
-			// TODO: handle exception
-			log.info("statID 가져오기 실패");
-		}
-		
-		return statids;
-	}
+	
 	
 	public Mono<List<List<EvStoreResultDto>>> getKepco(Set<String> setId){
 		 
