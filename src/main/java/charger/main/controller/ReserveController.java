@@ -1,0 +1,40 @@
+package charger.main.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import charger.main.dto.ReserveDto;
+import charger.main.service.ReserveService;
+import jakarta.validation.Valid;
+
+@RestController
+public class ReserveController {
+	@Autowired
+	ReserveService reserveService;
+	
+	@PostMapping("/reserve/setslots")
+	public ResponseEntity<?> setTimeSlots(@RequestBody@Valid ReserveDto dto,Authentication authentication) throws Exception{
+		System.out.println("dk");
+		reserveService.setTimeSlot(dto,authentication.getName());
+		
+		return ResponseEntity.ok(HttpStatus.OK);
+	}
+	
+	@GetMapping("/reserve/getslots")
+	public ResponseEntity<?> getTimeSlots(Authentication authentication){
+		return ResponseEntity.ok().body(reserveService.getReserve(authentication.getName()));
+	}
+	
+	@PostMapping("/reserve/setslotsCancel")
+	public ResponseEntity<?> setTimeSlotsCancel(@RequestBody@Valid ReserveDto dto,Authentication authentication) throws Exception{
+		reserveService.setTimeSlotCancel(dto,authentication.getName());
+		
+		return ResponseEntity.ok("예약 취소완료.");
+	}
+}

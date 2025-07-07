@@ -11,13 +11,14 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import charger.main.fillter.JWTAuthenticationFilter;
+import charger.main.fillter.JWTAuthorizationFilter;
+import charger.main.persistence.MemberRepository;
 
 @Configuration
 @EnableWebSecurity
@@ -31,16 +32,21 @@ public class SecurityConfig{
 	@Autowired
 	private AuthenticationConfiguration authenticationConfiguration;
 	
+	@Autowired
+	private MemberRepository memberRepo;
+	
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
 		http.cors(cors->cors.configurationSource(corsSource()));
 		http.authorizeHttpRequests(security->security
 				.requestMatchers("/member/**").authenticated()
+				.requestMatchers("/reserve/**").authenticated()
 				.anyRequest().permitAll());
 		http.csrf(csrf->csrf.disable());
 		http.formLogin(form->form.disable());
 		http.httpBasic(basic->basic.disable());
 		http.sessionManagement(sm->sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+		http.addFilterBefore(new JWTAuthorizationFilter(memberRepo),AuthorizationFilter.class);
 		http.addFilter(new JWTAuthenticationFilter(authenticationConfiguration.getAuthenticationManager()));
 		return http.build();
 	}
