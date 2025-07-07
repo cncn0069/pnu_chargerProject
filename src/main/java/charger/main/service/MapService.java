@@ -18,6 +18,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import charger.main.domain.Charger;
 import charger.main.domain.ConnectorTypes;
 import charger.main.domain.StoreInfo;
+import charger.main.domain.TimeSlot;
 import charger.main.domain.embeded.ChargerId;
 import charger.main.dto.CoorDinatesDto;
 import charger.main.dto.EvStoreResultDto;
@@ -28,6 +29,8 @@ import charger.main.persistence.ChargerRepository;
 import charger.main.persistence.StoreInfoRepository;
 import charger.main.persistence.TimeSlotRepository;
 import charger.main.util.StoreUtil;
+import charger.main.util.TimeUtil;
+import charger.main.util.TimeUtil.TimeSlotTem;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
@@ -167,21 +170,6 @@ public class MapService {
 		}
 		return results;
 	}
-	
-//	public List<TimeSlotDTO> getTimeSlot(String stat_id, String chger_id,LocalDate date){
-//		
-//		//timeSlot이 해당하는 날에 타임슬롯이 있는지 없는지 확인
-//		StoreInfo storeInfo = infoRepo.findById(stat_id).orElseThrow(()->new AttributeNotFoundException());
-//		ChargerId chargerId = new ChargerId();
-//		chargerId.setChgerId(chger_id);
-//		chargerId.setStatId(storeInfo.getStatId());
-//		
-//		Charger charger = new Charger();
-//		charger.setChargerId(chargerId);
-//		charger.set
-//		
-//		if(timeSlotRepo.findByChargerAndDate(null, date)
-//	}
 	
 	//부산시도 코드로 부산시의 모든 전기차 충전소 위치 저장
 	public Map<String,List<EvStoreResultDto>> setEvStores(CoorDinatesDto dto) {

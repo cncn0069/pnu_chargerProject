@@ -1,5 +1,9 @@
 package charger.main.dto;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,8 +20,14 @@ import lombok.ToString;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TimeSlotDTO {
+	@NotBlank
+	private String statId;
+	@NotBlank
+	private String chgerId;
 	private Long timeId;
-	private String startTime;
-	private String endTime;
-	private boolean enabled;
+	@NotBlank
+	private LocalDate date;
+	private LocalTime startTime;
+	private LocalTime endTime;
+	private Boolean enabled;
 }

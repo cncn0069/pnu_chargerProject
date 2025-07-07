@@ -1,7 +1,7 @@
 package charger.main.domain;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -39,7 +39,7 @@ public class TimeSlot {
 		@JoinColumn(name = "chger_id",referencedColumnName = "chger_id")})
 	private Charger charger;
 	private LocalDate date;
-	private LocalDateTime startTime;
-	private LocalDateTime endTime;
+	private LocalTime startTime;
+	private LocalTime endTime;
 	private boolean enabled;
 }

@@ -1,5 +1,6 @@
 package charger.main.util;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,23 +16,26 @@ public class TimeUtil {
 	@Getter
 	@Setter
 	@AllArgsConstructor
-	public class TimeSlot {
+	public class TimeSlotTem {
 	    private LocalTime startTime;
 	    private LocalTime endTime;
 	}
 	
-	public List<TimeSlot> generateTimeSlots(LocalTime start, LocalTime end, int slotMinutes){
-		
-		
-		List<TimeSlot> slots = new ArrayList<>();
-		LocalTime current = start;
-		while(current.isBefore(end)) {
-			LocalTime next= current.plusMinutes(30);
-			if(next.isAfter(end)) break;
-			slots.add(new TimeSlot(current, next));
-			current = next;
-		}
-		
-		return slots;
+	public List<TimeSlotTem> generateTimeSlots() {
+	    int timeSet = 30;
+
+	    List<TimeSlotTem> slots = new ArrayList<>();
+	    LocalTime current = LocalTime.MIN;
+	    //LocalTime end = LocalTime.MAX.minusNanos(LocalTime.MAX.getNano()); // 23:59:59
+
+	    for (int i = 0; i < 48;i++) {
+	        LocalTime next = current.plusMinutes(timeSet);
+	        next = next.minusSeconds(1);
+	        slots.add(new TimeSlotTem(current, next));
+	        current = next.plusSeconds(1);
+	    }
+
+	    return slots;
 	}
+
 }
