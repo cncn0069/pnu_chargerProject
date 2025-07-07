@@ -17,6 +17,6 @@ import lombok.Setter;
 public class LoginDto {
 	@NotBlank(message = "username가 비었습니다.")
 	private String username;
-	@NotBlank(message = "message가 비었습니다.")
+	@NotBlank(message = "password가 비었습니다.")
 	private String password;
 }

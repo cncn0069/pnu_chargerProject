@@ -46,6 +46,7 @@ public class Member {
 	private List<Role> role;
 	@Column(nullable = false)
 	private boolean enabled;
+	private String address;
 	@Column(nullable = false,name = "create_at")
 	private LocalDateTime createAt;
 }

@@ -23,6 +23,11 @@ public class ServiceUserDetailsService implements UserDetailsService{
 		// TODO Auto-generated method stub
 		Member member = memberRepo.findById(username).orElseThrow(()->new UsernameNotFoundException("사용하지 않는 사용자입니다."));
 		
+		//삭제된 사용자라면
+		if(!member.isEnabled()) {
+			throw new UsernameNotFoundException("탈퇴된 사용자 입니다.");
+		}
+		
 		return User.builder().username(member.getUsername())
 				.password(member.getPassword())
 				.authorities(AuthorityUtils.createAuthorityList(member.getRole().toString()))
