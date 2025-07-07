@@ -12,7 +12,9 @@ import org.springframework.stereotype.Service;
 
 import charger.main.domain.Member;
 import charger.main.persistence.MemberRepository;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 public class ServiceUserDetailsService implements UserDetailsService{
 	@Autowired
@@ -25,6 +27,7 @@ public class ServiceUserDetailsService implements UserDetailsService{
 		
 		//삭제된 사용자라면
 		if(!member.isEnabled()) {
+			log.error("탈퇴된 사용자 입니다.");
 			throw new UsernameNotFoundException("탈퇴된 사용자 입니다.");
 		}
 		

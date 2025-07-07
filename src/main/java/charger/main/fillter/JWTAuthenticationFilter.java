@@ -9,8 +9,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.fasterxml.jackson.core.exc.StreamReadException;
+import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import charger.main.domain.Member;
@@ -33,7 +36,7 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 	
 	@Override
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
-			throws AuthenticationException {
+			throws AuthenticationException,UsernameNotFoundException {
 		ObjectMapper mapper = new ObjectMapper();
 		try {
 			log.info("인증 프로세스 시작");
@@ -41,10 +44,15 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 			Authentication authToken =  new UsernamePasswordAuthenticationToken(member.getUsername(), member.getPassword());
 			
 			return authenticationManager.authenticate(authToken);
-		} catch (Exception e) {
-			// TODO: handle exception
-			log.error("아이디나 비번이 비었습니다.");
-			response.setStatus(HttpStatus.UNAUTHORIZED.value());
+		} catch (StreamReadException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (DatabindException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		return null;
 		// TODO Auto-generated method stub
