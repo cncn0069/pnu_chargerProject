@@ -2,24 +2,39 @@ package charger.main.service;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import charger.main.domain.FavoriteStore;
 import charger.main.domain.Member;
 import charger.main.domain.Role;
+import charger.main.domain.StoreInfo;
+import charger.main.domain.embeded.FavoriteStoreId;
 import charger.main.dto.MemberDto;
+import charger.main.persistence.FavoriteRepository;
 import charger.main.persistence.MemberRepository;
+import charger.main.persistence.StoreInfoRepository;
 
 @Service
 public class MemberService {
 	@Autowired
 	MemberRepository memberRepo;
-	//회원가입
-	PasswordEncoder encode = new BCryptPasswordEncoder();
 	
+	@Autowired
+	StoreInfoRepository infoRepo;
+	
+	@Autowired
+	FavoriteRepository favoriteRepo;
+	
+	PasswordEncoder encode = new BCryptPasswordEncoder();
+	//회원가입
 	public void setUser(MemberDto dto) {
 		
 		//해당하는 아이디가 있는지 확인
@@ -50,7 +65,6 @@ public class MemberService {
 		}
 		
 		member.setNickname(dto.getNickname());
-		member.setPassword(dto.getPassword());
 		member.setEmail(dto.getEmail());
 		member.setPhoneNumber(dto.getPhoneNumber());
 		member.setEmail(dto.getEmail());
@@ -99,5 +113,55 @@ public class MemberService {
 		member.setEnabled(false);
 		
 		memberRepo.save(member);
+	}
+	
+	public void setFavorite(String statId,String username) {
+		Member member = memberRepo.findById(username).get();
+		StoreInfo info = infoRepo.findById(statId).orElseThrow(()->new IllegalStateException("존재하지 않는 충전소 입니다."));
+		
+		
+		FavoriteStoreId favoriteStoreId = new FavoriteStoreId();
+		favoriteStoreId.setStoreId(info.getStatId());
+		favoriteStoreId.setUsername(member.getUsername());
+		
+		Optional<FavoriteStore>  opt = favoriteRepo.findById(favoriteStoreId);
+		//이미 존재하는 좋아하는 가게가 없다면
+		if(opt.isEmpty()) {
+			favoriteRepo.save(FavoriteStore.builder()
+					.favoriteStoreId(favoriteStoreId)
+					.member(member)
+					.storeInfo(info)
+					.createdAt(LocalDateTime.now())
+					.enabled(true)
+					.build());
+		}else {
+			FavoriteStore store = opt.get();
+			store.setEnabled(true);
+			favoriteRepo.save(store);
+		}
+		
+		
+	}
+	
+	public List<StoreInfo> getFavorites(String username){
+		
+		Member member = memberRepo.findById(username).get();
+		List<String> statIds = favoriteRepo.getByUsername(member.getUsername());
+		
+		
+		return statIds.stream().map(n-> infoRepo.findById(n).get()).collect(Collectors.toList());
+	}
+	
+	public void deleteFavorite(String statId,String username) {
+	
+		Member member = memberRepo.findById(username).get();
+		StoreInfo info = infoRepo.findById(statId).orElseThrow(()->new IllegalStateException("존재하지 않는 충전소 입니다."));
+		FavoriteStoreId favoriteStoreId = new FavoriteStoreId();
+		favoriteStoreId.setStoreId(info.getStatId());
+		favoriteStoreId.setUsername(member.getUsername());
+		
+		FavoriteStore favoriteStore = favoriteRepo.findById(favoriteStoreId).get();
+		favoriteStore.setEnabled(false);
+		favoriteRepo.save(favoriteStore);
 	}
 }

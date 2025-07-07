@@ -1,5 +1,7 @@
 package charger.main.controller;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -8,8 +10,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import charger.main.domain.StoreInfo;
 import charger.main.dto.LoginDto;
 import charger.main.dto.MemberDto;
 import charger.main.service.MemberService;
@@ -37,7 +41,7 @@ public class MemberController {
 		return ResponseEntity.ok("가입 가능한 아이디입니다.");
 	}
 	
-	@GetMapping("/user/info")
+	@GetMapping("user/info")
 	public MemberDto getUserInfo(Authentication authentication) {
 		return memberService.getMemberInfo(authentication.getName());
 	}
@@ -49,6 +53,21 @@ public class MemberController {
 	
 	@DeleteMapping("/user/withdraw")
 	public void withdrawUser(Authentication authentication) {
-		
+		memberService.withDrawUser(authentication.getName());
+	}
+	
+	@GetMapping("user/favorite")
+	public void setFavorite(@RequestParam(name="statid")String statId,Authentication authentication) {
+		memberService.setFavorite(statId, authentication.getName());
+	}
+	
+	@GetMapping("user/favorite/info")
+	public List<StoreInfo> getFaboriteInfo(Authentication authentication) {
+		return memberService.getFavorites(authentication.getName());
+	}
+	
+	@DeleteMapping("user/favorite/delete")
+	public void deleteFavorite(@RequestParam(name="statid")String statId,Authentication authentication) {
+		memberService.deleteFavorite(statId, authentication.getName());
 	}
 }
