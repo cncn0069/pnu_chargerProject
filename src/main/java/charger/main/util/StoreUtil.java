@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,7 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import charger.main.domain.QStoreInfo;
+import charger.main.domain.StoreInfo;
 import charger.main.dto.CoorDinatesDto;
 import charger.main.dto.EvStoreResultDto;
 import charger.main.dto.ItemWrapper;
@@ -178,6 +180,12 @@ public class StoreUtil {
 		BooleanBuilder builder = new BooleanBuilder();
 		QStoreInfo qinfo = QStoreInfo.storeInfo;
 		MapQueryDto mqDto = MapDto.getMapQueryDto();
+		
+		//검색어가 있으면
+		if(mqDto.getKeyWord() != null && !mqDto.getKeyWord().isBlank()) {
+			builder.and(qinfo.statNm.like("%"+ mqDto.getKeyWord()+ "%"));
+		}
+		
 		if(mqDto.getLimitYn()) {
 			//접근 제한이 없는 곳을 고른다.
 			//false이면 제한이 없는곳
@@ -193,6 +201,10 @@ public class StoreUtil {
 				builder.and(qinfo.busiId.in(busiId));
 			}
 		}
+
+		for(String chagerType:mqDto.getChgerType()) {
+			builder.or(qinfo.busiNm.like(chagerType));
+		}
 		if(mqDto.getUseMap()) {
 			builder.and(qinfo.lng.between(bb.getMinLng(), bb.getMaxLng()));
 			builder.and(qinfo.lat.between(bb.getMinLat(), bb.getMaxLat()));
@@ -203,10 +215,7 @@ public class StoreUtil {
 
 			builder.and(distanceCondition);
 		}
-		//이후에 추가
-//		for(String chagerType:mqDto.getChgerType()) {
-//			builder.or(qinfo.busiNm.like(chagerType));
-//		}
+
 		//output, canUse, chgerType 는 MapService에서 처리 쪽에서 따로 처리
 		
 		List<String> results = queryFactory
@@ -214,6 +223,9 @@ public class StoreUtil {
 				.from(qinfo)
 				.where(builder)
 				.fetch();
+		
+		
+		
 		
 //		for(String result: results) {
 //			log.info("요구 코드 : " + result);
@@ -257,6 +269,57 @@ public class StoreUtil {
 		
 	}
 	
+	
+	public List<List<EvStoreResultDto>> getDummy(Set<String> setIds){
+		
+		List<List<EvStoreResultDto>> results = new ArrayList<>();
+		
+		
+		for(String setId:setIds) {
+			StoreInfo storeinfo = infoRepo.findById(setId).get();
+			Random random = new Random();
+			//0~99
+			int randomEvSlot = random.nextInt(10)+1;
+			
+			List<EvStoreResultDto> temp = new ArrayList<>();
+			
+			for(int i = 0; i < randomEvSlot;i++) {
+				temp.add(EvStoreResultDto.builder()
+						.statNm(storeinfo.getStatNm())
+					    .statId(storeinfo.getStatId())
+					    .chgerId("0" + String.valueOf(i))
+					    .chgerType("0"+String.valueOf(random.nextInt(5)+1))
+					    .addr(storeinfo.getAddr())
+					    .lat(storeinfo.getLat())
+					    .lng(storeinfo.getLng())
+					    .useTime(String.valueOf(i) + "시간")
+					    .location("지하"+ String.valueOf(5)+1  +"층")
+					    .startUpdatetime("20250708150026")
+					    .stat(String.valueOf(random.nextInt(5)+1))
+					    .statUpdDt("2025-07-08 09:55:00")
+					    .lastTsdt("20250708150026")
+					    .lastTedt("20250708150013")
+					    .nowTsdt(Math.random() < 0.5 ? "20250708150026" : null)
+					    .output(String.valueOf(random.nextInt(200)+1))
+					    .method(Math.random() < 0.5 ? "단독" : "동시")
+					    .kind("G0")
+					    .kindDetail("G004")
+					    .parkingFree(storeinfo.getParkingFree() ? "Y" : "N")
+					    .note("빠른 충전 가능")
+					    .limitYn(storeinfo.getLimitYn() ? "Y" : "N")
+					    .limitDetail(null)
+					    .delYn("N")
+					    .busiId(storeinfo.getBusiId())
+					    .busiNm(storeinfo.getBusiNm())
+					    .build());
+			}
+			results.add(temp);
+		}
+		
+		return results;
+	}
+	
+//	public 
 //	.path("B552584/EvCharger/getChargerInfo")
 //    .queryParam("page", "1")
 //    .queryParam("perPage", "9999")
@@ -347,6 +410,7 @@ public class StoreUtil {
 			int chargeSlowNum = 0;
 			int totalMidNum = 0;
 			int chargeMidNum = 0;
+			int nacsTotalNum = 0;
 			Set<String> enabledCharger = new HashSet<>();
 			Map<String, EvStoreResultDto> chargerInfo = new HashMap<>();
 			for(EvStoreResultDto evDto: item) {
@@ -387,6 +451,7 @@ public class StoreUtil {
 						break;
 					case "10":
 						chargeFastNum++;
+						nacsTotalNum++;
 						break;
 					
 				}
@@ -406,7 +471,7 @@ public class StoreUtil {
 					totalFastNum++;
 				}
 			}
-	
+			stDto.setTotalNacsNum(nacsTotalNum);
 			stDto.setChargerInfo(chargerInfo);
 			stDto.setChargeFastNum(chargeFastNum);
 			stDto.setChargeMidNum(chargeMidNum);

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import charger.main.domain.StoreInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,6 +36,7 @@ public class StoreResultsDto {
 	int chargeSlowNum;
 	int totalMidNum;
 	int chargeMidNum;
+	int totalNacsNum;
 	private int chargeNum;
 	private Set<String> enabledCharger;
 	private String busiId;

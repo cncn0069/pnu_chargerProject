@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import charger.main.domain.FavoriteStore;
 import charger.main.domain.Member;
 import charger.main.domain.Role;
+import charger.main.domain.State;
 import charger.main.domain.StoreInfo;
 import charger.main.domain.embeded.FavoriteStoreId;
 import charger.main.dto.MemberDto;
@@ -115,7 +116,7 @@ public class MemberService {
 		memberRepo.save(member);
 	}
 	
-	public void setFavorite(String statId,String username) {
+	public void setFavorite(String statId,State state,String username) {
 		Member member = memberRepo.findById(username).get();
 		StoreInfo info = infoRepo.findById(statId).orElseThrow(()->new IllegalStateException("존재하지 않는 충전소 입니다."));
 		
@@ -133,6 +134,7 @@ public class MemberService {
 					.storeInfo(info)
 					.createdAt(LocalDateTime.now())
 					.enabled(true)
+					.state(state)
 					.build());
 		}else {
 			FavoriteStore store = opt.get();

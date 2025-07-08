@@ -13,6 +13,9 @@ import charger.main.domain.embeded.FavoriteStoreId;
 public interface FavoriteRepository extends JpaRepository<FavoriteStore, FavoriteStoreId>{
 	
 	
-	@Query("select fs.favoriteStoreId.storeId from FavoriteStore fs where fs.favoriteStoreId.username = :username")
+	@Query("select fs.favoriteStoreId.storeId from FavoriteStore fs where fs.favoriteStoreId.username = :username and enabled=true")
 	List<String> getByUsername(String username);
+	
+	@Query("select fs from FavoriteStore fs where fs.favoriteStoreId.username = :username")
+	List<FavoriteStore> getAllByUsername(String username);
 }

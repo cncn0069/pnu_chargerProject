@@ -37,4 +37,5 @@ public class MapQueryDto {
 	private Integer outputMax;
 	private Set<String> busiId;
 	private Set<String> chgerType;
+	private String keyWord;
 }

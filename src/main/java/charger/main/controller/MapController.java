@@ -4,15 +4,19 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import charger.main.dto.CoorDinatesDto;
 import charger.main.dto.EvStoreResultDto;
+import charger.main.dto.FavoriteDto;
 import charger.main.dto.MapInfoResultDto;
 import charger.main.dto.StoreResultsDto;
 import charger.main.service.MapService;
+import charger.main.util.StoreUtil;
 import jakarta.validation.Valid;
 
 @RestController
@@ -24,11 +28,30 @@ public class MapController {
 	@PostMapping("/map/post/stations")
 	public List<StoreResultsDto> getDefaultStations(
 			@Valid
-			@RequestBody MapInfoResultDto dto) {
+			@RequestBody MapInfoResultDto dto, Authentication authentication) {
 		//위도 경도로 주위 충전소 찾기getMapInfo
 		List<StoreResultsDto> result = mapService.getEVStores(dto); 
+			
+		return result;
+	}
+	
+	@PostMapping("/map/stations/size")
+	public int getStationsSize(@Valid
+			@RequestBody MapInfoResultDto dto) {
 		
-		//매번 조회시마다 해당하는 충전소가 없으면 충전소 등록
+		
+		return mapService.getStoresize(dto);
+	}
+	
+	@GetMapping("/map/post/stations/favorite")
+	public List<FavoriteDto> getFavoriteStations(Authentication authentication) {
+		
+		List<FavoriteDto> result = null;
+		//즐겨찾기 정보 불러오기
+		//로그인 되어있으면
+		if(authentication.isAuthenticated()) {
+			result = mapService.getFavorites(authentication.getName());
+		}
 		
 		return result;
 	}

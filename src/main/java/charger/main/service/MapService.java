@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.management.AttributeNotFoundException;
@@ -15,17 +16,22 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.querydsl.core.group.GroupBy;
+
 import charger.main.domain.Charger;
 import charger.main.domain.ConnectorTypes;
+import charger.main.domain.FavoriteStore;
 import charger.main.domain.StoreInfo;
 import charger.main.domain.TimeSlot;
 import charger.main.domain.embeded.ChargerId;
 import charger.main.dto.CoorDinatesDto;
 import charger.main.dto.EvStoreResultDto;
+import charger.main.dto.FavoriteDto;
 import charger.main.dto.MapInfoResultDto;
 import charger.main.dto.StoreResultsDto;
 import charger.main.dto.TimeSlotDTO;
 import charger.main.persistence.ChargerRepository;
+import charger.main.persistence.FavoriteRepository;
 import charger.main.persistence.StoreInfoRepository;
 import charger.main.persistence.TimeSlotRepository;
 import charger.main.util.StoreUtil;
@@ -50,6 +56,9 @@ public class MapService {
 	@Autowired
 	private TimeSlotRepository timeSlotRepo;
 	
+	@Autowired
+	private FavoriteRepository favoriteRepo;
+	
 	@Value("${kakao.api.key}")
 	private String KAKAO_API_KEY;
 	
@@ -64,9 +73,12 @@ public class MapService {
 	
 	public List<StoreResultsDto> getEVStores(MapInfoResultDto dto) {
 		List<String> codes = util.getMapInfo(dto);
-		Mono<List<List<EvStoreResultDto>>> kepcoResults = util.getKepco(codes.stream().collect(Collectors.toSet()));
+//		Mono<List<List<EvStoreResultDto>>> kepcoResults = util.getKepco(codes.stream().collect(Collectors.toSet()));
+//		List<List<EvStoreResultDto>> items = kepcoResults.block();
 		
-		List<List<EvStoreResultDto>> items = kepcoResults.block();
+		//더미
+		List<List<EvStoreResultDto>> items = util.getDummy(codes.stream().collect(Collectors.toSet()));
+		
 		List<StoreResultsDto> results = new ArrayList<>();
 		
 		for(List<EvStoreResultDto> item:items) {
@@ -90,35 +102,66 @@ public class MapService {
 							types.add("03");
 							types.add("05");
 							types.add("06");
+							//급속 충전 가능 수 0 can use가 활성화
+							if(dto.getMapQueryDto().getCanUse() && resultDto.getChargeFastNum() <= 0) {
+								flag = true;
+							}
 							break;
 						case "AC완속":
 							types.add("02");
+							//완속 충전 가능 수 0 can use가 활성화 되어있고
+							if(dto.getMapQueryDto().getCanUse() && resultDto.getChargeSlowNum() <= 0) {
+								flag = true;
+							}
 							break;
 						case "DC콤보":
 							types.add("04");
 							types.add("05");
 							types.add("06");
 							types.add("10");
+							//급속 충전 가능 수 0 can use가 활성화
+							if(dto.getMapQueryDto().getCanUse() && resultDto.getChargeFastNum() <= 0) {
+								flag = true;
+							}
 							break;
 						case "AC3상":
 							types.add("03");
 							types.add("06");
 							types.add("07");
+							//급속 충전 가능 수 0 can use가 활성화
+							if(dto.getMapQueryDto().getCanUse() && resultDto.getChargeFastNum() <= 0) {
+								flag = true;
+							}
 						case "콤보(완속)":
 							types.add("08");
+							if(dto.getMapQueryDto().getCanUse() && resultDto.getChargeSlowNum() <= 0) {
+								flag = true;
+							}
 						case "NACS":
 							types.add("09");
 							types.add("10");
+							//급속 충전 가능 수 0 can use가 활성화
+							if(dto.getMapQueryDto().getCanUse() && resultDto.getTotalNacsNum() <= 0) {
+								flag = true;
+							}
 					}
 				}
 				
+				if(flag) {
+					continue;
+				}
+				
 				for(String type : types) {
-					flag = true;
+					flag = true;		
 					if(resultDto.getEnabledCharger().contains(type)) {
 						flag = false;
 						break;
 					}
-				}				
+				}
+				
+				if(flag) {
+					continue;
+				}
 			}
 			//output
 			Map<String, EvStoreResultDto> chargerInfo = resultDto.getChargerInfo();
@@ -158,8 +201,6 @@ public class MapService {
 						e.printStackTrace();
 					}
 				}
-							
-				
 			}
 			//chgerType이 존재하지 않는다면
 			if(flag) {
@@ -237,5 +278,37 @@ public class MapService {
 			}
 		}
 		return search;
+	}
+	
+	public int getStoresize(MapInfoResultDto dto) {
+		return util.getMapInfo(dto).size();
+	}
+	
+	//즐겨찾기한 저장소 추가
+	public List<FavoriteDto> getFavorites(String username){
+		List<String> codes = favoriteRepo.getByUsername(username);
+		Mono<List<List<EvStoreResultDto>>> kepcoResults = util.getKepco(codes.stream().collect(Collectors.toSet()));
+		
+		Map<String,FavoriteStore> favorites = favoriteRepo.getAllByUsername(username)
+				.stream()
+				.collect(Collectors.toMap(f -> (String)(f.getStoreInfo().getStatId()),
+						Function.identity(),
+						(existing, replacement) -> existing
+						));
+		//동기로 바꾸는건 가장 마지막에
+		List<List<EvStoreResultDto>> items = kepcoResults.block();
+		List<FavoriteDto> results = new ArrayList<>();
+		for(List<EvStoreResultDto> item:items) {
+			StoreResultsDto storeDto = util.getStoreResultsDto(item);
+			
+			results.add(FavoriteDto.builder()
+					.storeResults(storeDto)
+					.state(favorites.get(storeDto.getStatId()).getState())
+					.createAt(favorites.get(storeDto.getStatId()).getCreatedAt())
+					.build());
+		}
+		
+		//내가 즐겨찾기한 가게 리턴
+		return results;
 	}
 }
