@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import charger.main.domain.State;
 import charger.main.domain.StoreInfo;
 import charger.main.dto.LoginDto;
 import charger.main.dto.MemberDto;
@@ -57,8 +58,8 @@ public class MemberController {
 	}
 	
 	@GetMapping("user/favorite")
-	public void setFavorite(@RequestParam(name="statid")String statId,Authentication authentication) {
-		memberService.setFavorite(statId, authentication.getName());
+	public void setFavorite(@RequestParam(name="statid")String statId,State state,Authentication authentication) {
+		memberService.setFavorite(statId, state,authentication.getName());
 	}
 	
 	@GetMapping("user/favorite/info")
