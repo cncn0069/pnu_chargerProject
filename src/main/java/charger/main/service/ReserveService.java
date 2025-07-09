@@ -50,6 +50,7 @@ public class ReserveService {
 		
 		List<StoreReservation> stores = reserveRepo.findByMemberOrderByReserveId(member);
 		
+		//날짜로 모으기
 		return stores.stream().collect(
 				Collectors.groupingBy(
 						store->store.getSlot().getDate(),

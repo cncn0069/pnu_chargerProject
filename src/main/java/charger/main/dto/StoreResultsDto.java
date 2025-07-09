@@ -1,10 +1,9 @@
 package charger.main.dto;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import charger.main.domain.StoreInfo;
+import charger.main.domain.ConnectorTypes;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,6 +24,7 @@ public class StoreResultsDto {
 	private String statNm;
 	private String statId;
 	private String addr;
+	private String useTime;
 	private double lat;
 	private double lng;
 	private Boolean parkingFree;
@@ -38,7 +38,7 @@ public class StoreResultsDto {
 	int chargeMidNum;
 	int totalNacsNum;
 	private int chargeNum;
-	private Set<String> enabledCharger;
+	private Set<ConnectorTypes> enabledCharger;
 	private String busiId;
 	private String busiNm;
 	Map<String, EvStoreResultDto> chargerInfo;

@@ -1,6 +1,5 @@
 package charger.main.service;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -16,27 +15,21 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import com.querydsl.core.group.GroupBy;
-
 import charger.main.domain.Charger;
 import charger.main.domain.ConnectorTypes;
 import charger.main.domain.FavoriteStore;
 import charger.main.domain.StoreInfo;
-import charger.main.domain.TimeSlot;
 import charger.main.domain.embeded.ChargerId;
 import charger.main.dto.CoorDinatesDto;
 import charger.main.dto.EvStoreResultDto;
 import charger.main.dto.FavoriteDto;
 import charger.main.dto.MapInfoResultDto;
 import charger.main.dto.StoreResultsDto;
-import charger.main.dto.TimeSlotDTO;
 import charger.main.persistence.ChargerRepository;
 import charger.main.persistence.FavoriteRepository;
 import charger.main.persistence.StoreInfoRepository;
 import charger.main.persistence.TimeSlotRepository;
 import charger.main.util.StoreUtil;
-import charger.main.util.TimeUtil;
-import charger.main.util.TimeUtil.TimeSlotTem;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
@@ -73,79 +66,57 @@ public class MapService {
 	
 	public List<StoreResultsDto> getEVStores(MapInfoResultDto dto) {
 		List<String> codes = util.getMapInfo(dto);
-//		Mono<List<List<EvStoreResultDto>>> kepcoResults = util.getKepco(codes.stream().collect(Collectors.toSet()));
-//		List<List<EvStoreResultDto>> items = kepcoResults.block();
-		
+		Mono<List<List<EvStoreResultDto>>> kepcoResults = util.getKepco(codes.stream().collect(Collectors.toSet()));
+		List<List<EvStoreResultDto>> items = kepcoResults.block();
+
 		//더미
-		List<List<EvStoreResultDto>> items = util.getDummy(codes.stream().collect(Collectors.toSet()));
+		//사용시 StoreInfo 로그 못쓰게 해야함 
+//		List<List<EvStoreResultDto>> items = util.getDummy(codes.stream().collect(Collectors.toSet()));
 		
 		List<StoreResultsDto> results = new ArrayList<>();
 		
 		for(List<EvStoreResultDto> item:items) {
 			StoreResultsDto resultDto = util.getStoreResultsDto(item);
+			boolean flag = false;
 			//canuse
 			// 사용가능한 조건이 걸려있고 사용가능한 충전기 개수도 0일 때
-			if(dto.getMapQueryDto().getCanUse() && resultDto.getTotalChargeNum() <= 0) {
-				continue;
+			if(dto.getMapQueryDto().getCanUse()) {
+				if(resultDto.getChargeNum() <= 0) {
+					continue;
+					//타입 조건까지 잇으면
+				}else if(dto.getMapQueryDto().getChgerType() != null && dto.getMapQueryDto().getChgerType().size() != 0){
+					for(ConnectorTypes ct:resultDto.getEnabledCharger()) {
+						flag = true;
+						for(ConnectorTypes dtoCt:dto.getMapQueryDto().getChgerType()) {
+							//하나라도 같은가
+							if(ct.equals(dtoCt)) {
+								if(dtoCt.equals(ConnectorTypes.AC완속) || dtoCt.equals(ConnectorTypes.DC콤보_완속)&& resultDto.getChargeSlowNum() > 0) {
+									flag = false;
+									break;
+								}else if(dtoCt.equals(ConnectorTypes.DC차데모) 
+										|| dtoCt.equals(ConnectorTypes.DC콤보)
+										|| dtoCt.equals(ConnectorTypes.AC3상)
+										&& resultDto.getChargeFastNum() > 0) {
+									flag = false;
+									break;
+								}else if(dtoCt.equals(ConnectorTypes.NACS)
+										&& resultDto.getTotalNacsNum() > 0) {
+									flag = false;
+									break;
+								}
+							}
+						}
+					}
+				}
 			}
 			
-			boolean flag = false;
+			if(flag)
+				continue;
+			
 			//chgerType
 			//충전기 타입 조건 사이즈가 0 이 아닐때
 			if(dto.getMapQueryDto().getChgerType().size() != 0) {
 				Set<String> types = new HashSet<>();
-				for(String chgerType:dto.getMapQueryDto().getChgerType()) {
-					//chgerType이 존재하지 않는다면
-					switch(chgerType) {
-						case "DC차데모":
-							types.add("01");
-							types.add("03");
-							types.add("05");
-							types.add("06");
-							//급속 충전 가능 수 0 can use가 활성화
-							if(dto.getMapQueryDto().getCanUse() && resultDto.getChargeFastNum() <= 0) {
-								flag = true;
-							}
-							break;
-						case "AC완속":
-							types.add("02");
-							//완속 충전 가능 수 0 can use가 활성화 되어있고
-							if(dto.getMapQueryDto().getCanUse() && resultDto.getChargeSlowNum() <= 0) {
-								flag = true;
-							}
-							break;
-						case "DC콤보":
-							types.add("04");
-							types.add("05");
-							types.add("06");
-							types.add("10");
-							//급속 충전 가능 수 0 can use가 활성화
-							if(dto.getMapQueryDto().getCanUse() && resultDto.getChargeFastNum() <= 0) {
-								flag = true;
-							}
-							break;
-						case "AC3상":
-							types.add("03");
-							types.add("06");
-							types.add("07");
-							//급속 충전 가능 수 0 can use가 활성화
-							if(dto.getMapQueryDto().getCanUse() && resultDto.getChargeFastNum() <= 0) {
-								flag = true;
-							}
-						case "콤보(완속)":
-							types.add("08");
-							if(dto.getMapQueryDto().getCanUse() && resultDto.getChargeSlowNum() <= 0) {
-								flag = true;
-							}
-						case "NACS":
-							types.add("09");
-							types.add("10");
-							//급속 충전 가능 수 0 can use가 활성화
-							if(dto.getMapQueryDto().getCanUse() && resultDto.getTotalNacsNum() <= 0) {
-								flag = true;
-							}
-					}
-				}
 				
 				if(flag) {
 					continue;
@@ -178,7 +149,7 @@ public class MapService {
 						chargerId.setStatId(storeInfo.getStatId());
 						chargerId.setChgerId(chargerInfo.get(keySet).getChgerId());
 						
-						
+						//더미데이터가 등록되고 있었음
 						//충전기 정보가 등록안되어있으면 등록하기
 						if(chargerRepo.findById(chargerId).isEmpty()){
 							Charger charger = new Charger();

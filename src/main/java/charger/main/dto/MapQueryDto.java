@@ -3,6 +3,7 @@ package charger.main.dto;
 import java.util.Map;
 import java.util.Set;
 
+import charger.main.domain.ConnectorTypes;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -36,6 +37,6 @@ public class MapQueryDto {
 	@Max(value = 2001, message = "outputMax이 현재 2000초과 입니다.")
 	private Integer outputMax;
 	private Set<String> busiId;
-	private Set<String> chgerType;
+	private Set<ConnectorTypes> chgerType;
 	private String keyWord;
 }
