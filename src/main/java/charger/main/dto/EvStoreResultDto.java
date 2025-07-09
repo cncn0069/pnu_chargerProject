@@ -1,5 +1,7 @@
 package charger.main.dto;
 
+import java.io.Serializable;
+
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
@@ -11,7 +13,8 @@ import lombok.ToString;
 @Setter
 @ToString
 @Builder
-public class EvStoreResultDto{
+public class EvStoreResultDto implements Serializable{
+	  private static final long serialVersionUID = 1L;
 	//충전소 명
 	private String statNm;
 	//충전소 ID

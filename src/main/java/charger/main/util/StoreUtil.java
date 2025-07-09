@@ -15,6 +15,7 @@ import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
@@ -29,6 +30,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
+import charger.main.domain.ConnectorTypes;
 import charger.main.domain.QStoreInfo;
 import charger.main.domain.StoreInfo;
 import charger.main.dto.CoorDinatesDto;
@@ -48,7 +50,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
-@RequiredArgsConstructor
 @Component
 public class StoreUtil {
 	
@@ -70,12 +71,12 @@ public class StoreUtil {
 	@PersistenceContext
 	private EntityManager em;
 	
-	public StoreUtil(WebClient.Builder webClientBuilder,String kakaoApiKey,String ddApiKey,String ddApiKeyDecode) {
-	        this.webClientBuilder = webClientBuilder;
-	        this.KAKAO_API_KEY = kakaoApiKey;
-	        this.DD_API_KEY = ddApiKey;
-	        this.DD_API_KEY_DECODE = ddApiKeyDecode;
-	    }
+//	public StoreUtil(WebClient.Builder webClientBuilder,String kakaoApiKey,String ddApiKey,String ddApiKeyDecode) {
+//	        this.webClientBuilder = webClientBuilder;
+//	        this.KAKAO_API_KEY = kakaoApiKey;
+//	        this.DD_API_KEY = ddApiKey;
+//	        this.DD_API_KEY_DECODE = ddApiKeyDecode;
+//	    }
 	
 	public Set<String> getKakao(CoorDinatesDto dto) {
 		WebClient webClient = webClientBuilder.baseUrl("https://dapi.kakao.com").build();
@@ -201,10 +202,13 @@ public class StoreUtil {
 				builder.and(qinfo.busiId.in(busiId));
 			}
 		}
-
-		for(String chagerType:mqDto.getChgerType()) {
-			builder.or(qinfo.busiNm.like(chagerType));
+		//타입 조건이 걸렸으면
+		if(mqDto.getChgerType() != null && mqDto.getChgerType().size() != 0) {
+			for(ConnectorTypes chagerType:mqDto.getChgerType()) {
+				builder.or(qinfo.enabledCharger.contains(chagerType));
+			}
 		}
+		
 		if(mqDto.getUseMap()) {
 			builder.and(qinfo.lng.between(bb.getMinLng(), bb.getMaxLng()));
 			builder.and(qinfo.lat.between(bb.getMinLat(), bb.getMaxLat()));
@@ -235,7 +239,7 @@ public class StoreUtil {
 	}
 	
 	
-	
+	@Cacheable(value="setIds",  keyGenerator = "sortedSetKeyGenerator")
 	public Mono<List<List<EvStoreResultDto>>> getKepco(Set<String> setId){
 		 
 		String serviceKey = DD_API_KEY;
@@ -328,6 +332,7 @@ public class StoreUtil {
 //    .queryParam("statId", id)
 //    .build();
 
+//	@Cacheable(value = "statids", keyGenerator = "sortedSetKeyGenerator")
 	public Map<String,List<EvStoreResultDto>> setMapInfo(Set<String> statids) {
 		Gson gson = new Gson();
 		Map<String,List<EvStoreResultDto>> result = new HashMap<>();
@@ -388,10 +393,6 @@ public class StoreUtil {
 	
 	
 	public StoreResultsDto getStoreResultsDto(List<EvStoreResultDto> item) {
-		
-			
-		
-		
 			StoreResultsDto stDto = new StoreResultsDto();
 			stDto.setStatNm(item.get(0).getStatNm());
 			stDto.setStatId(item.get(0).getStatId());
@@ -402,6 +403,8 @@ public class StoreUtil {
 			stDto.setLimitYn(item.get(0).getLimitYn().equals("Y") ?true:false);
 			stDto.setBusiId(item.get(0).getBusiId());
 			stDto.setBusiNm(item.get(0).getBusiNm());
+			stDto.setUseTime(item.get(0).getUseTime());
+			
 			int totalChargeNum = 0;
 			int chargeNum = 0;
 			int totalFastNum = 0;
@@ -411,7 +414,7 @@ public class StoreUtil {
 			int totalMidNum = 0;
 			int chargeMidNum = 0;
 			int nacsTotalNum = 0;
-			Set<String> enabledCharger = new HashSet<>();
+			Set<ConnectorTypes> enabledCharger = new HashSet<>();
 			Map<String, EvStoreResultDto> chargerInfo = new HashMap<>();
 			for(EvStoreResultDto evDto: item) {
 				if(evDto == null)
@@ -424,41 +427,53 @@ public class StoreUtil {
 					switch (evDto.getChgerType()) {
 					case "01":
 						chargeFastNum++;
+						enabledCharger.add(ConnectorTypes.DC차데모);
 						break;
 					case "02":
 						chargeSlowNum++;
+						enabledCharger.add(ConnectorTypes.AC완속);
 						break;
 					case "03":
 						chargeFastNum++;
+						enabledCharger.add(ConnectorTypes.DC차데모);
+						enabledCharger.add(ConnectorTypes.AC3상);
 						break;
 					case "04":
 						chargeFastNum++;
+						enabledCharger.add(ConnectorTypes.DC콤보);
 						break;
 					case "05":
 						chargeFastNum++;
+						enabledCharger.add(ConnectorTypes.DC차데모);
+						enabledCharger.add(ConnectorTypes.DC콤보);
 						break;
 					case "06":
 						chargeFastNum++;
+						enabledCharger.add(ConnectorTypes.DC차데모);
+						enabledCharger.add(ConnectorTypes.DC콤보);
+						enabledCharger.add(ConnectorTypes.AC3상);
 						break;
 					case "07":
+						enabledCharger.add(ConnectorTypes.AC3상);
 						chargeSlowNum++;
 						break;
 					case "08":
+						enabledCharger.add(ConnectorTypes.DC콤보_완속);
 						chargeSlowNum++;
 						break;
 					case "09":
+						enabledCharger.add(ConnectorTypes.NACS);
 						chargeFastNum++;
 						break;
 					case "10":
+						enabledCharger.add(ConnectorTypes.NACS);
+						enabledCharger.add(ConnectorTypes.DC콤보);
 						chargeFastNum++;
 						nacsTotalNum++;
 						break;
 					
 				}
 				}
-				enabledCharger.add(evDto.getChgerType());
-				
-	
 				int output = Integer.parseInt(evDto.getOutput().equals("")? "0": evDto.getOutput());
 				
 				if(output <= 7) {
@@ -482,6 +497,22 @@ public class StoreUtil {
 			stDto.setTotalChargeNum(totalChargeNum);
 			stDto.setChargeNum(chargeNum);
 			stDto.setEnabledCharger(enabledCharger);
+			
+			//StoreInfo 정보가 등록 안되어있으면 등록
+			//enabledChager 정보가 등록안되어있어서함
+			infoRepo.save(StoreInfo.builder()
+					.statId(item.get(0).getStatId())
+	                .statNm(item.get(0).getStatNm())
+	                .addr(item.get(0).getAddr())
+	                .lat(item.get(0).getLat())
+	                .lng(item.get(0).getLng())
+	                .parkingFree(item.get(0).getParkingFree().equals("Y")?true:false)
+	                .limitYn(item.get(0).getLimitYn().equals("Y") ?true:false)
+	                .enabledCharger(enabledCharger)
+	                .busiId(item.get(0).getBusiId())
+	                .busiNm(item.get(0).getBusiNm())
+	                .build());
+			
 		return stDto;
 	}
 }
