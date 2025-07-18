@@ -1,7 +1,9 @@
 package charger.main.controller;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -14,6 +16,7 @@ import charger.main.dto.CoorDinatesDto;
 import charger.main.dto.EvStoreResultDto;
 import charger.main.dto.FavoriteDto;
 import charger.main.dto.MapInfoResultDto;
+import charger.main.dto.MapSetIdsDto;
 import charger.main.dto.StoreResultsDto;
 import charger.main.service.MapService;
 import charger.main.util.StoreUtil;
@@ -66,6 +69,11 @@ public class MapController {
 		//매번 조회시마다 해당하는 충전소가 없으면 충전소 등록
 		
 		return result;
+	}
+	
+	@PostMapping("/map/post/setById")
+	public void setById(@RequestBody MapSetIdsDto ids) {
+		mapService.setById(new HashSet<>(ids.getIds()));
 	}
 	
 //	@PostMapping("/map/post/stations/filter")

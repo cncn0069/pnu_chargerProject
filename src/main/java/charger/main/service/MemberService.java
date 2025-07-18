@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,11 +18,17 @@ import charger.main.domain.Member;
 import charger.main.domain.Role;
 import charger.main.domain.State;
 import charger.main.domain.StoreInfo;
+import charger.main.domain.UserCarInfo;
 import charger.main.domain.embeded.FavoriteStoreId;
+import charger.main.dto.EvCarDto;
 import charger.main.dto.MemberDto;
+import charger.main.dto.UserCarModelDto;
+import charger.main.persistence.EVCarModelRepository;
+import charger.main.persistence.EvCarsRepository;
 import charger.main.persistence.FavoriteRepository;
 import charger.main.persistence.MemberRepository;
 import charger.main.persistence.StoreInfoRepository;
+import charger.main.persistence.UserCarInfoRepository;
 
 @Service
 public class MemberService {
@@ -33,6 +40,18 @@ public class MemberService {
 	
 	@Autowired
 	FavoriteRepository favoriteRepo;
+	
+	@Autowired
+	UserCarInfoRepository carInfoRepository;
+	
+	@Autowired
+	EVCarModelRepository carModelRepository;
+	
+	@Autowired
+	EvCarsRepository evCarsRepository;
+	
+	@Autowired
+	UserCarInfoRepository userCarInfoRepository;
 	
 	PasswordEncoder encode = new BCryptPasswordEncoder();
 	//회원가입
@@ -52,7 +71,9 @@ public class MemberService {
 				.email(dto.getEmail())
 				.sex(dto.getSex())
 				.role(Arrays.asList(Role.ROLE_MEMBER))
-				.address(dto.getAddress())
+				.zipcode(dto.getZipcode())
+				.roadAddr(dto.getRoadAddr())
+				.detailAddr(dto.getDetailAddr())
 				.enabled(true)
 				.createAt(LocalDateTime.now())
 				.build());
@@ -70,7 +91,9 @@ public class MemberService {
 		member.setPhoneNumber(dto.getPhoneNumber());
 		member.setEmail(dto.getEmail());
 		member.setSex(dto.getSex());
-		member.setAddress(dto.getAddress());
+		member.setZipcode(dto.getZipcode());
+		member.setRoadAddr(dto.getRoadAddr());
+		member.setDetailAddr(dto.getDetailAddr());
 		
 		
 //		.(encode.encode(dto.getPassword()))
@@ -104,7 +127,9 @@ public class MemberService {
 				.phoneNumber(member.getPhoneNumber())
 				.email(member.getEmail())
 				.sex(member.getSex())
-				.address(member.getAddress())
+				.zipcode(member.getZipcode())
+				.roadAddr(member.getRoadAddr())
+				.detailAddr(member.getDetailAddr())
 				.createAt(member.getCreateAt())
 				.build();
 	}
@@ -143,6 +168,49 @@ public class MemberService {
 		}
 		
 		
+	}
+	
+	public void setUserCarInfo(EvCarDto dto,String username) {
+		Member member = memberRepo.findById(username).get();
+		
+		carInfoRepository.save(UserCarInfo.builder()
+				.carId(carModelRepository.findByEvCarModelName(dto.getModel()))
+				.member(member)
+				.createAt(LocalDateTime.now())
+				.mainModel(dto.getMainModel())
+				.enabled(true)
+				.build());
+	}
+	
+	public List<EvCarDto> getUserCarInfo(String username){
+		Member member = memberRepo.findById(username).get();
+		
+		return userCarInfoRepository.findByMemberAndEnabledTrue(member)
+				.stream()
+				.map(n -> EvCarDto.builder()
+				.brand((evCarsRepository.getByCarId(n.getCarId().getCarId())).getBrand())
+				.model(n.getCarId().getEvCarModelName())
+				.mainModel(n.getMainModel())
+				.userCarId(n.getUserCarId())
+				.build())
+				.collect(Collectors.toList());
+	}
+	
+	public void patchUserCarInfo(EvCarDto dto,Long userCarId,String username) {
+		UserCarInfo carInfo = userCarInfoRepository.findById(userCarId).get();
+		
+		//모델이랑
+		//메인 차량 변경만 가능
+		carInfo.setMainModel(dto.getMainModel());
+		carInfo.setCarId(carModelRepository.findByEvCarModelName(dto.getModel()));
+
+		carInfoRepository.save(carInfo);
+	}
+	
+	public void deleteUserCarInfo(Long userCarId) {
+		UserCarInfo carInfo = userCarInfoRepository.findById(userCarId).get();
+		carInfo.setEnabled(false);
+		userCarInfoRepository.save(carInfo);
 	}
 	
 	public List<StoreInfo> getFavorites(String username){

@@ -53,4 +53,6 @@ public class StoreInfo {
 	private Set<ConnectorTypes> enabledCharger;
 	private String busiId;
 	private String busiNm;
+	@Column(name = "charger_nm")
+	private Integer chargerNm;
 }

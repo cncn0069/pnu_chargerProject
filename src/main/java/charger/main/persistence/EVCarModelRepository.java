@@ -5,5 +5,6 @@ import org.springframework.data.jpa.repository.Query;
 
 import charger.main.domain.EVCarModel;
 
-public interface EVCarModelRepository extends JpaRepository<EVCarModel, Integer>{
+public interface EVCarModelRepository extends JpaRepository<EVCarModel, Long>{
+	EVCarModel findByEvCarModelName(String carName);
 }

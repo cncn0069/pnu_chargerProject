@@ -18,15 +18,15 @@ public class ReserveController {
 	@Autowired
 	ReserveService reserveService;
 	
-	@PostMapping("/reserve/setslots")
+	@PostMapping("/reserve/setSlots")
 	public ResponseEntity<?> setTimeSlots(@RequestBody@Valid ReserveDto dto,Authentication authentication) throws Exception{
-		System.out.println("dk");
+
 		reserveService.setTimeSlot(dto,authentication.getName());
 		
 		return ResponseEntity.ok(HttpStatus.OK);
 	}
 	
-	@GetMapping("/reserve/getslots")
+	@GetMapping("/reserve/getSlots")
 	public ResponseEntity<?> getTimeSlots(Authentication authentication){
 		return ResponseEntity.ok().body(reserveService.getReserve(authentication.getName()));
 	}

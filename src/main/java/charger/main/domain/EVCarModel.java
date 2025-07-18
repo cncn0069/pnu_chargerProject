@@ -25,7 +25,7 @@ import lombok.ToString;
 public class EVCarModel {
 	@Id
 	@Column(name = "car_id")
-	private Integer carId;
+	private Long carId;
 	@Column(name = "ev_car_model_name")
 	private String evCarModelName;
 }

@@ -12,7 +12,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -39,11 +38,6 @@ public class StoreReservation {
 	@ManyToOne
 	@JoinColumn(name="user_name")
 	private Member member;
-	
-	@ManyToOne
-	@JoinColumn(name="time_id")
-	@NotNull
-	private TimeSlot slot;
 	
 	@Column(name="reserve_date")
 	private LocalDate reserveDate;
