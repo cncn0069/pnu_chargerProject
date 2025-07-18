@@ -28,7 +28,7 @@ import lombok.ToString;
 public class UserCarInfo {
 	@Id@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "user_car_id")
-	private Integer userCarId;
+	private Long userCarId;
 	
 	@ManyToOne
 	@JoinColumn(name = "car_id")
@@ -37,8 +37,10 @@ public class UserCarInfo {
 	@ManyToOne
 	@JoinColumn(name="username")
 	private Member member;
-	
 	private boolean enabled;
 	@Column(name = "create_at")
 	private LocalDateTime createAt;
+	
+	@Column(name = "main_model")
+	private Boolean mainModel;
 }

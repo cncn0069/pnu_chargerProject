@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import charger.main.domain.Member;
 import charger.main.dto.LoginDto;
+import charger.main.persistence.MemberRepository;
 import charger.main.util.JWTUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -32,7 +33,7 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 	
 	private final AuthenticationManager authenticationManager;
 	
-	
+	private final MemberRepository memberRepository;
 	
 	@Override
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
@@ -60,10 +61,11 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 	
 	@Override
 	protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
-			Authentication authResult) throws IOException, ServletException {
+			Authentication authResult) throws IOException, ServletException {	
 		log.info("인증완료");
 		User user = (User)authResult.getPrincipal();
-		String token = JWTUtil.getJWT(user.getUsername());
+		Member member = memberRepository.findById(user.getUsername()).get();
+		String token = JWTUtil.getJWT(user.getUsername(),member.getRole());
 		
 		response.addHeader(HttpHeaders.AUTHORIZATION, token);
 		response.setStatus(HttpStatus.OK.value());

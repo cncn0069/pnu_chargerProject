@@ -28,10 +28,8 @@ public class SecurityConfig{
 	PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder(); 
 	}
-	
 	@Autowired
-	private AuthenticationConfiguration authenticationConfiguration;
-	
+	private AuthenticationConfiguration authenticationConfiguration;	
 	@Autowired
 	private MemberRepository memberRepo;
 	
@@ -47,13 +45,15 @@ public class SecurityConfig{
 		http.httpBasic(basic->basic.disable());
 		http.sessionManagement(sm->sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 		http.addFilterBefore(new JWTAuthorizationFilter(memberRepo),AuthorizationFilter.class);
-		http.addFilter(new JWTAuthenticationFilter(authenticationConfiguration.getAuthenticationManager()));
+		http.addFilter(new JWTAuthenticationFilter(authenticationConfiguration.getAuthenticationManager(),memberRepo));
 		return http.build();
 	}
 		
 	 private CorsConfigurationSource corsSource() {
 		 CorsConfiguration config = new CorsConfiguration();
 		 config.addAllowedOrigin("http://localhost:3000");
+		 config.addAllowedOrigin("http://localhost:3001");
+		 config.addAllowedOrigin("http://10.125.121.173:3001");
 		 config.addAllowedMethod(CorsConfiguration.ALL);
 		 config.addAllowedHeader(CorsConfiguration.ALL);
 		 config.setAllowCredentials(true);

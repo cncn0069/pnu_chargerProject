@@ -46,7 +46,11 @@ public class Member {
 	private List<Role> role;
 	@Column(nullable = false)
 	private boolean enabled;
-	private String address;
+	private String zipcode;
+	@Column(name = "road_addr")
+	private String roadAddr;
+	@Column(name = "detail_addr")
+	private String detailAddr;
 	@Column(nullable = false,name = "create_at")
 	private LocalDateTime createAt;
 }

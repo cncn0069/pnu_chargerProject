@@ -1,9 +1,13 @@
 package charger.main.util;
 
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+
+import charger.main.domain.Role;
 
 public class JWTUtil {
 	public static final String JWT_KEY = "edu.pnu.jwt";
@@ -15,9 +19,15 @@ public class JWTUtil {
 		if(token.startsWith(PREFIX)) return token.replace(PREFIX,"");
 		return token;
 	}
-	public static String getJWT(String username) {
+	public static String getJWT(String username,List<Role> roles) {
+		
+		List<String> roleNames = roles.stream()
+                .map(role -> role.toString()) // Role에서 "ROLE_USER" 등 반환
+                .collect(Collectors.toList());
+		
 		String src = JWT.create()
 				.withClaim(claimName, username)
+				.withClaim("role", roleNames)
 				.withExpiresAt(new Date(System.currentTimeMillis()+ACCESS_TOKEN_MSEC))
 				.sign(Algorithm.HMAC256(JWT_KEY));
 		return PREFIX + src;

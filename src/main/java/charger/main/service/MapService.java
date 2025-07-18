@@ -66,12 +66,12 @@ public class MapService {
 	
 	public List<StoreResultsDto> getEVStores(MapInfoResultDto dto) {
 		List<String> codes = util.getMapInfo(dto);
-		Mono<List<List<EvStoreResultDto>>> kepcoResults = util.getKepco(codes.stream().collect(Collectors.toSet()));
-		List<List<EvStoreResultDto>> items = kepcoResults.block();
+//		Mono<List<List<EvStoreResultDto>>> kepcoResults = util.getKepco(codes.stream().collect(Collectors.toSet()));
+//		List<List<EvStoreResultDto>> items = kepcoResults.block();
 
-		//더미
-		//사용시 StoreInfo 로그 못쓰게 해야함 
-//		List<List<EvStoreResultDto>> items = util.getDummy(codes.stream().collect(Collectors.toSet()));
+//		더미
+//		사용시 StoreInfo 로그 못쓰게 해야함 
+		List<List<EvStoreResultDto>> items = util.getDummy(codes.stream().collect(Collectors.toSet()));
 		
 		List<StoreResultsDto> results = new ArrayList<>();
 		
@@ -181,6 +181,20 @@ public class MapService {
 			results.add(resultDto);
 		}
 		return results;
+	}
+	public void setById(Set<String> ids) {
+		Mono<List<List<EvStoreResultDto>>> kepcoResults = util.getKepco(ids);
+		List<List<EvStoreResultDto>> items = kepcoResults.block();
+		
+		for(List<EvStoreResultDto> item:items) {
+			StoreResultsDto resultDto = util.getStoreResultsDto(item);
+			
+			StoreInfo info = infoRepo.findById(resultDto.getStatId()).get();
+			
+			info.setChargerNm(resultDto.getTotalChargeNum());
+			
+			infoRepo.save(info);
+		}
 	}
 	
 	//부산시도 코드로 부산시의 모든 전기차 충전소 위치 저장

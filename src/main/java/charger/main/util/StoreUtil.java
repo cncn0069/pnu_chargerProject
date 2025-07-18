@@ -498,8 +498,8 @@ public class StoreUtil {
 			stDto.setChargeNum(chargeNum);
 			stDto.setEnabledCharger(enabledCharger);
 			
-			//StoreInfo 정보가 등록 안되어있으면 등록
-			//enabledChager 정보가 등록안되어있어서함
+//			StoreInfo 정보가 등록 안되어있으면 등록
+//			enabledChager 정보가 등록안되어있어서함
 			infoRepo.save(StoreInfo.builder()
 					.statId(item.get(0).getStatId())
 	                .statNm(item.get(0).getStatNm())

@@ -12,19 +12,27 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
+import charger.main.ChargerProjectApplication;
 import charger.main.domain.State;
 import charger.main.domain.StoreInfo;
+import charger.main.dto.EvCarDto;
 import charger.main.dto.LoginDto;
 import charger.main.dto.MemberDto;
+import charger.main.dto.UserCarModelDto;
 import charger.main.service.MemberService;
 import jakarta.validation.Valid;
 
 @RestController
 public class MemberController {
+
+    private final ChargerProjectApplication chargerProjectApplication;
 	
 	@Autowired
 	MemberService memberService;
+
+    MemberController(ChargerProjectApplication chargerProjectApplication) {
+        this.chargerProjectApplication = chargerProjectApplication;
+    }
 	
 	@GetMapping({"/", "/index"})
 	 public String index() {
@@ -37,7 +45,7 @@ public class MemberController {
 	}
 	
 	@PostMapping("/user/join/valid")
-	public ResponseEntity<?> validUser(@RequestBody LoginDto dto) {
+	public ResponseEntity<?> validUser(@RequestBody@Valid LoginDto dto) {
 		memberService.validUser(dto.getUsername());
 		return ResponseEntity.ok("가입 가능한 아이디입니다.");
 	}
@@ -50,6 +58,26 @@ public class MemberController {
 	@PatchMapping("/user/edit")
 	public void patchUserInfo(@RequestBody@Valid MemberDto dto,Authentication authentication) {
 		memberService.editUser(dto, authentication.getName());
+	}
+	
+	@PostMapping("/user/car/set")
+	public void setUserCarInfo(@RequestBody@Valid EvCarDto dto,Authentication authentication) {
+		memberService.setUserCarInfo(dto, authentication.getName());
+	}
+	
+	@PatchMapping("/user/car/edit")
+	public void pathchUserCarInfo(@RequestBody EvCarDto dto,@RequestParam Long userCarId,Authentication authentication) {
+		memberService.patchUserCarInfo(dto,userCarId, authentication.getName());
+	}
+	
+	@GetMapping("/user/car/info")
+	public List<EvCarDto> getUserCarInfo(Authentication authentication) {
+		return memberService.getUserCarInfo(authentication.getName());
+	}
+	
+	@DeleteMapping("/user/car/delete")
+	public void deleteUserCarInfo(@RequestParam Long userCarId) {
+		memberService.deleteUserCarInfo(userCarId);
 	}
 	
 	@DeleteMapping("/user/withdraw")
