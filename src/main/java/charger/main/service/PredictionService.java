@@ -54,10 +54,7 @@ public class PredictionService {
 					.from(qinfo)
 					.where(builder)
 					.fetch();
-			
-			
-			
-			
+					
 			//예측치 가져오기
 			for(StoreInfo item:ids) {
 				StoreResultsDto stDto = new StoreResultsDto();

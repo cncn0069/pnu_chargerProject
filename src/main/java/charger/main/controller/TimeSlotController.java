@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 import charger.main.config.SecurityConfig;
 import charger.main.dto.ReserveDto;
 import charger.main.dto.TimeSlotDTO;
-import charger.main.service.ReserveService;
 import charger.main.service.TimeSlotService;
+import charger.main.service.Reserve.ReserveGetService;
 import jakarta.validation.Valid;
 
 @RestController

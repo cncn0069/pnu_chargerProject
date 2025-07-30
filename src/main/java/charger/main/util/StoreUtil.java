@@ -16,16 +16,21 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -39,6 +44,7 @@ import charger.main.dto.ItemWrapper;
 import charger.main.dto.KaKaoResultDto;
 import charger.main.dto.MapInfoResultDto;
 import charger.main.dto.MapQueryDto;
+import charger.main.dto.RouteSummaryDto;
 import charger.main.dto.StoreResultsDto;
 import charger.main.persistence.StoreInfoRepository;
 import charger.main.util.GeoUtil.BoundingBox;
@@ -285,6 +291,47 @@ public class StoreUtil {
 		        .map(wrapper -> wrapper.getItems().getItem())
 		    )
 		    .collectList();
+		
+	}
+	@Cacheable(value = "kakaoDisCache", key = "#dto.toString() + '-' + #ids.hashCode()")
+	public Mono<List<RouteSummaryDto>> getKakaoDis(CoorDinatesDto dto, List<Tuple> ids){
+		 
+		 WebClient webClient = WebClient.builder()
+			        .baseUrl("https://apis-navi.kakaomobility.com/v1/directions")
+			        .defaultHeader("Authorization", "KakaoAK " + KAKAO_API_KEY)
+			        .build();
+	 			
+		 			
+			    return Flux.fromIterable(ids)
+			        .flatMap(id -> {
+			        	String origin= String.valueOf(dto.getLon()) + "," + String.valueOf(dto.getLat());
+			            String destination = String.valueOf(id.get(1,Double.class)) + "," + String.valueOf(id.get(0,Double.class));
+			            return webClient.get()
+			                .uri(uriBuilder -> uriBuilder
+			                    .queryParam("origin", origin)
+			                    .queryParam("destination", destination)
+			                    .build())
+			                .retrieve()
+			                .bodyToMono(String.class)  // JSON을 문자열로 받음
+			                .flatMap(json -> {
+			                    try {
+			                        ObjectMapper mapper = new ObjectMapper();
+			                        JsonNode root = mapper.readTree(json);
+			                        JsonNode routes = root.path("routes");
+			                        if (routes.isArray() && routes.size() > 0) {
+			                            JsonNode summary = routes.get(0).path("summary");
+			                            int distance = summary.path("distance").asInt();
+			                            int duration = summary.path("duration").asInt();
+			                            RouteSummaryDto routeSummaryDto = new RouteSummaryDto(distance, duration);
+			                            return Mono.just(routeSummaryDto);
+			                        } else {
+			                            return Mono.empty();  // routes가 없으면 빈 Mono 반환
+			                        }
+			                    } catch (Exception e) {
+			                        return Mono.error(e);
+			                    }
+			                });
+			        }).collectList();
 		
 	}
 	

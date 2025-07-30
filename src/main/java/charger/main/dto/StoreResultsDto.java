@@ -27,9 +27,12 @@ public class StoreResultsDto {
 	private String useTime;
 	private double lat;
 	private double lng;
+	private int minute;
+	private String predTag;
 	private Boolean parkingFree;
 	private Boolean limitYn;
 	private int totalChargeNum;
+	private Boolean bestChoice;
 	int totalFastNum;
 	int totalSlowNum;
 	int chargeFastNum;

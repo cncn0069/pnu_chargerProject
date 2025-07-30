@@ -22,5 +22,6 @@ import lombok.ToString;
 public class ReserveDto {
 	@NotNull
 	private Set<Long> slotIds;
+	private Set<Long> reseIds;
 	private LocalDate date;
 }

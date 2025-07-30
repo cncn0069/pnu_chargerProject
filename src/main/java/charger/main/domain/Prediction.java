@@ -24,7 +24,7 @@ import lombok.ToString;
 public class Prediction {
 	@Id
 	private Long id;
-	@Column(name="store_timestamp")
+	@Column(name="store_time_stamp")
 	private LocalDateTime storeTimeStamp;
 	@Column(name="station_location")
 	private String stationLocation;

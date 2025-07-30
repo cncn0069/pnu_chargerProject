@@ -38,8 +38,10 @@ public class StoreInfo {
 	@Column(name = "stat_nm")
 	private String statNm;
 	private String addr;
+	
 	private double lat;
 	private double lng;
+	
 	@Column(name = "parking_free")
 	private Boolean parkingFree;
 	@Column(name = "limit_yn")
