@@ -37,6 +37,7 @@ public class StoreResultsDto {
 	int totalMidNum;
 	int chargeMidNum;
 	int totalNacsNum;
+	double chargingDemand;
 	private int chargeNum;
 	private Set<ConnectorTypes> enabledCharger;
 	private String busiId;

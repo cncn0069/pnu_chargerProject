@@ -1,6 +1,8 @@
 package charger.main.service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -72,12 +74,21 @@ public class MapService {
 //		더미
 //		사용시 StoreInfo 로그 못쓰게 해야함 
 		List<List<EvStoreResultDto>> items = util.getDummy(codes.stream().collect(Collectors.toSet()));
+//--------------------------------
+		
 		
 		List<StoreResultsDto> results = new ArrayList<>();
 		
 		for(List<EvStoreResultDto> item:items) {
 			StoreResultsDto resultDto = util.getStoreResultsDto(item);
 			boolean flag = false;
+			
+			if(dto.getMapQueryDto() == null) {
+				results.add(resultDto);
+				
+				continue;
+			}
+			
 			//canuse
 			// 사용가능한 조건이 걸려있고 사용가능한 충전기 개수도 0일 때
 			if(dto.getMapQueryDto().getCanUse()) {
@@ -182,6 +193,8 @@ public class MapService {
 		}
 		return results;
 	}
+	
+	
 	public void setById(Set<String> ids) {
 		Mono<List<List<EvStoreResultDto>>> kepcoResults = util.getKepco(ids);
 		List<List<EvStoreResultDto>> items = kepcoResults.block();
@@ -295,5 +308,13 @@ public class MapService {
 		
 		//내가 즐겨찾기한 가게 리턴
 		return results;
+	}
+	
+	public StoreResultsDto getOneStoreByStatid(String statId) {
+		Mono<List<List<EvStoreResultDto>>> kepcoResults = util.getKepco(Collections.singleton(statId));
+		List<List<EvStoreResultDto>> item = kepcoResults.block();
+		
+		StoreResultsDto resultDto = util.getStoreResultsDto(item.get(0));
+		return resultDto;
 	}
 }

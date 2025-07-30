@@ -17,4 +17,5 @@ public interface StoreInfoRepository extends JpaRepository<StoreInfo, String>,Qu
 			          + " AND ST_Distance_Sphere(POINT(si.lng, si.lat), POINT(:lon, :lat)) <= :radius",
 			nativeQuery = true)
 	List<String> getStatIdByLatLng(double lat, double lon,int radius,double minLng, double maxLng, double minLat, double maxLat);
+
 }

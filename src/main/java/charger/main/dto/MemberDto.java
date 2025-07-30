@@ -27,7 +27,10 @@ public class MemberDto {
     private String phoneNumber;
     private String email;
     private String sex;
+    //이거 뭐야?
+    //아 사는곳 시도 코드
 	private String zipcode;
+	//도로명 주소
 	private String roadAddr;
 	private String detailAddr;
     private boolean enabled;

@@ -234,4 +234,21 @@ public class MemberService {
 		favoriteStore.setEnabled(false);
 		favoriteRepo.save(favoriteStore);
 	}
+	
+	public List<MemberDto> getUsers() {
+		return memberRepo.findAll().stream()
+				.map(n-> MemberDto.builder()
+						.username(n.getUsername())
+						.nickname(n.getNickname())
+						.phoneNumber(n.getPhoneNumber())
+						.email(n.getEmail())
+						.sex(n.getSex())
+						.zipcode(n.getZipcode())
+						.roadAddr(n.getRoadAddr())
+						.detailAddr(n.getDetailAddr())
+						.enabled(n.isEnabled())
+						.createAt(n.getCreateAt())
+						.build())
+				.collect(Collectors.toList());
+	}
 }

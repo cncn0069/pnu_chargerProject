@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import com.auth0.jwt.exceptions.TokenExpiredException;
+
 import charger.main.exception.ErrorResponse;
 
 @RestControllerAdvice
@@ -52,4 +54,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler{
 		
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
 	}
+	
+	@ExceptionHandler(TokenExpiredException.class)
+	public ResponseEntity<?> handleTokenExpiredException(TokenExpiredException ex){
+		
+		ErrorResponse error = new ErrorResponse("토큰 만료", List.of(ex.getMessage()));
+		
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+	}
+	
 }

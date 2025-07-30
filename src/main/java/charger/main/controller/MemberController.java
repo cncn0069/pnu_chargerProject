@@ -99,4 +99,9 @@ public class MemberController {
 	public void deleteFavorite(@RequestParam(name="statid")String statId,Authentication authentication) {
 		memberService.deleteFavorite(statId, authentication.getName());
 	}
+	
+	@GetMapping("/admin/users/info")
+	public List<MemberDto> getUsersInfo(){
+		return memberService.getUsers();
+	}
 }

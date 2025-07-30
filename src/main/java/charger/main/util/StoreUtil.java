@@ -171,7 +171,6 @@ public class StoreUtil {
 	public List<String> getMapInfo(MapInfoResultDto MapDto){
 		CoorDinatesDto dto = MapDto.getCoorDinatesDto();
 		
-		List<String> codes = new ArrayList<>();
 		GeoUtil geoUtil = new GeoUtil();
 		BoundingBox bb = geoUtil.getBoundingBox(dto.getLat(), dto.getLon(), dto.getRadius());
 		
@@ -180,26 +179,45 @@ public class StoreUtil {
 		
 		BooleanBuilder builder = new BooleanBuilder();
 		QStoreInfo qinfo = QStoreInfo.storeInfo;
+		
+		//필터가 없으면 거리만으로
+		if(MapDto.getMapQueryDto() == null) {
+			builder.and(qinfo.lng.between(bb.getMinLng(), bb.getMaxLng()));
+			builder.and(qinfo.lat.between(bb.getMinLat(), bb.getMaxLat()));
+			BooleanExpression distanceCondition = Expressions.booleanTemplate(
+				    "ST_Distance_Sphere(POINT({0}, {1}), POINT({2}, {3})) <= {4}",
+				    qinfo.lng, qinfo.lat, dto.getLon(), dto.getLat(), ((double)dto.getRadius())
+				);
+
+			builder.and(distanceCondition);
+			return  queryFactory
+					.select(qinfo.statId)
+					.from(qinfo)
+					.where(builder)
+					.fetch();
+		}
+		
 		MapQueryDto mqDto = MapDto.getMapQueryDto();
+		
 		
 		//검색어가 있으면
 		if(mqDto.getKeyWord() != null && !mqDto.getKeyWord().isBlank()) {
 			builder.and(qinfo.statNm.like("%"+ mqDto.getKeyWord()+ "%"));
 		}
 		
-		if(mqDto.getLimitYn()) {
+		if(mqDto.getLimitYn() != null && mqDto.getLimitYn()) {
 			//접근 제한이 없는 곳을 고른다.
 			//false이면 제한이 없는곳
 			builder.and(qinfo.limitYn.eq(false));
 		}
-		if(mqDto.getParkingFree()) {
+		if(mqDto.getParkingFree() != null && mqDto.getParkingFree()) {
 			//주차요금이 없는 곳을 고른다.
 			builder.and(qinfo.parkingFree.eq(true));
 		}
 		//busId와 같은지
-		if(mqDto.getBusiId().size() != 0) {
+		if(mqDto.getBusiId() != null && mqDto.getBusiId().size() != 0) {
 			for(String busiId:mqDto.getBusiId()) {
-				builder.and(qinfo.busiId.in(busiId));
+				builder.or(qinfo.busiId.contains(busiId));
 			}
 		}
 		//타입 조건이 걸렸으면
@@ -209,7 +227,7 @@ public class StoreUtil {
 			}
 		}
 		
-		if(mqDto.getUseMap()) {
+		if(mqDto.getUseMap() != null && mqDto.getUseMap()) {
 			builder.and(qinfo.lng.between(bb.getMinLng(), bb.getMaxLng()));
 			builder.and(qinfo.lat.between(bb.getMinLat(), bb.getMaxLat()));
 			BooleanExpression distanceCondition = Expressions.booleanTemplate(
@@ -227,10 +245,7 @@ public class StoreUtil {
 				.from(qinfo)
 				.where(builder)
 				.fetch();
-		
-		
-		
-		
+
 //		for(String result: results) {
 //			log.info("요구 코드 : " + result);
 //		}
@@ -288,6 +303,9 @@ public class StoreUtil {
 			List<EvStoreResultDto> temp = new ArrayList<>();
 			
 			for(int i = 0; i < randomEvSlot;i++) {
+				
+				double deliveredRadom = random.nextDouble(100); 
+				
 				temp.add(EvStoreResultDto.builder()
 						.statNm(storeinfo.getStatNm())
 					    .statId(storeinfo.getStatId())
@@ -315,6 +333,8 @@ public class StoreUtil {
 					    .delYn("N")
 					    .busiId(storeinfo.getBusiId())
 					    .busiNm(storeinfo.getBusiNm())
+					    .deliveredKwh(deliveredRadom - random.nextDouble(100))
+					    .requestKwh(deliveredRadom)
 					    .build());
 			}
 			results.add(temp);
@@ -323,16 +343,8 @@ public class StoreUtil {
 		return results;
 	}
 	
-//	public 
-//	.path("B552584/EvCharger/getChargerInfo")
-//    .queryParam("page", "1")
-//    .queryParam("perPage", "9999")
-//    .queryParam("serviceKey", serviceKey)
-//    .queryParam("dataType", "JSON")
-//    .queryParam("statId", id)
-//    .build();
 
-//	@Cacheable(value = "statids", keyGenerator = "sortedSetKeyGenerator")
+	@Cacheable(value = "statids", keyGenerator = "sortedSetKeyGenerator")
 	public Map<String,List<EvStoreResultDto>> setMapInfo(Set<String> statids) {
 		Gson gson = new Gson();
 		Map<String,List<EvStoreResultDto>> result = new HashMap<>();
@@ -511,65 +523,10 @@ public class StoreUtil {
 	                .enabledCharger(enabledCharger)
 	                .busiId(item.get(0).getBusiId())
 	                .busiNm(item.get(0).getBusiNm())
+//	                충전기 갯수 저장
+	                .chargerNm(totalChargeNum)
 	                .build());
 			
 		return stDto;
 	}
 }
-//Map<String,List<EvStoreResultDto>> result = new HashMap<>();
-//Gson gson = new Gson();
-//
-////충전소들		https://api.odcloud.kr/api/EvInfoServiceV2/v1/getEvSearchList?page=1&perPage=10&cond%5Baddr%3A%3ALIKE%5D=%EC%A0%84%EB%9D%BC%EB%82%A8%EB%8F%84%20%EB%82%98%EC%A3%BC%EC%8B%9C%20%EC%A0%84%EB%A0%A5%EB%A1%9C%2055&serviceKey=SqqAk1q%2BvWV6MAwbCqRTzoFfuIUi8A8sMtPEeDWsU%2Fs8OGT8DcGP4VGzGkYHmJoAzS60SjWRMeMRGFwq12ScGQ%3D%3D
-//		try {
-//				//statid로 재 검색
-//				for(String statId:setId) {
-//					String baseUrl = "http://apis.data.go.kr/B552584/EvCharger/getChargerInfo";
-//			        
-//		
-//					String query = "page=1&perPage=9999&" 
-//			        + "&serviceKey="
-//			        + serviceKey
-//			        + "&dataType="
-//			        + "JSON"
-//			        + "&statId="
-//			        + statId;			       
-//			        
-//			        URL url = new URL(baseUrl + "?" + query);
-//			        log.info("매장정보" + statId);
-//			        log.info("요청 주소 : " + url.toString());
-//			        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-//			        conn.setRequestMethod("GET");
-//			        int responseCode = conn.getResponseCode();
-//			        BufferedReader br = new BufferedReader(
-//			            new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8)
-//			        );
-//		
-//			        StringBuilder sb = new StringBuilder();
-//			        String line;
-//			        while ((line = br.readLine()) != null) {
-//			            sb.append(line);
-//			        }
-//			        br.close();
-//		        JsonObject obj = JsonParser.parseString(sb.toString()).getAsJsonObject();
-//		        JsonArray infos = obj.getAsJsonObject("items").getAsJsonArray("item");
-//			        try {	
-//						//item들 안에서 같은 곳인 곳을 찾아야함
-//						for(JsonElement element: infos) {
-//							EvStoreResultDto dto = gson.fromJson(element, EvStoreResultDto.class);
-//							result.computeIfAbsent(
-//								    dto.getStatId(), 
-//								    k -> new ArrayList<>()
-//								).add(dto);
-//						}
-//					}catch (Exception e) {
-//						// TODO: handle exception
-//						log.error("주소가 없습니다.");
-//						e.printStackTrace();
-//					}
-//				}
-//		} catch (Exception e) {
-//			// TODO: handle exception
-//			e.printStackTrace();
-//			log.info("Info 가져오기 실패");
-//		}
-//		return result;

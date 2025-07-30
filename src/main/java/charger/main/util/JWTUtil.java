@@ -11,7 +11,7 @@ import charger.main.domain.Role;
 
 public class JWTUtil {
 	public static final String JWT_KEY = "edu.pnu.jwt";
-	private static final long ACCESS_TOKEN_MSEC = 100 * (60* 1000);
+	public static final long ACCESS_TOKEN_MSEC = 60000 * (1000) *30;
 	private static final String claimName = "username";
 	public static final String PREFIX = "Bearer ";
 	

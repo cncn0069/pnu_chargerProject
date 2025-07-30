@@ -152,15 +152,9 @@ public class ReserveService {
 		
 	//예약 취소
 	@Transactional
-	public void setTimeSlotCancel(ReserveDto dto,String username) throws AttributeNotFoundException{
+	public void setTimeSlotCancel(ReserveDto dto,String username) throws AttributeNotFoundException,IllegalStateException{
 		List<Long> sortedSlotIds = dto.getSlotIds().stream().sorted().collect(Collectors.toList());		
-		//연속인지 체크
-//		for(int i = 1; i < sortedSlotIds.size();i++) {
-//			if(sortedSlotIds.get(i) != (sortedSlotIds.get(i-1) +1)) {
-//				throw new IllegalStateException("타임슬롯이 연속적이지 않음");
-//			}
-//		}
-		
+
 		//해당하는 슬롯을 모두 찾는다.
 		List<StoreReservation> slots = sortedSlotIds.stream().map(n->
 			reserveRepo.findById(n).get()
@@ -171,8 +165,12 @@ public class ReserveService {
 			if(!slot.getMember().getUsername().equals(username)) {
 				throw new IllegalStateException("예약한 유저와 요청한 유저가 다름");
 			}
-			
+						
 			for(ReserveTimeSlot rts : reserverTimeSlotRepository.findByReserveTimeId_ReserveId(slot.getReserveId())) {
+				if(!rts.isEnabled()) {
+					throw new IllegalStateException("이미 취소된 예약요청");
+				}
+				
 				rts.getTimeSlot().setEnabled(false);
 				rts.setEnabled(false);
 				

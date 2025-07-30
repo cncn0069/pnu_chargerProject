@@ -14,6 +14,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.TokenExpiredException;
 
 import charger.main.domain.Member;
 import charger.main.persistence.MemberRepository;
@@ -31,9 +32,15 @@ import lombok.extern.slf4j.Slf4j;
 public class JWTAuthorizationFilter extends OncePerRequestFilter {
 	private final MemberRepository mrp;
 	
+	private void sendErrorResponse(HttpServletResponse response, int status, String message) throws IOException {
+	    response.setStatus(status);
+	    response.setContentType("application/json;charset=UTF-8");
+	    response.getWriter().write("{\"error\": \"" + message + "\"}");
+	}
+	
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-			throws ServletException, IOException {
+			throws ServletException, IOException,TokenExpiredException {
 		log.info("권한인가 프로세스 시작 ");
 		String srcToken = null;
 		String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
@@ -83,9 +90,23 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
 		}
 
 		String jwtToken = srcToken.replaceAll(bearer, "");
+		String username = "";
 		// >> 쿠키 만료시 여기서 부터 문제생김
-		String username = JWT.require(Algorithm.HMAC256(tokener)).build().verify(jwtToken).getClaim("username").asString();
-		
+		try {
+	        username = JWT.require(Algorithm.HMAC256(tokener))
+	                .build()
+	                .verify(jwtToken)
+	                .getClaim("username")
+	                .asString();
+	    } catch (TokenExpiredException ex) {
+	        // 토큰 만료됨
+	        sendErrorResponse(response, 401, "토큰이 만료되었습니다.");
+	        return;
+	    } catch (Exception ex) {
+	        // 그 외 JWT 파싱/서명 오류
+	        sendErrorResponse(response, 401, "유효하지 않은 토큰입니다.");
+	        return;
+	    }
 		Optional<Member> opt = mrp.findById(username);
 		if (!opt.isPresent()) {
 			filterChain.doFilter(request, response);
@@ -105,5 +126,4 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
 		filterChain.doFilter(request, response);
 		log.info("권한 인가 성공");
 	}
-	
 }
