@@ -4,11 +4,15 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.PagedModel;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,13 +26,14 @@ import charger.main.domain.UserCarInfo;
 import charger.main.domain.embeded.FavoriteStoreId;
 import charger.main.dto.EvCarDto;
 import charger.main.dto.MemberDto;
-import charger.main.dto.UserCarModelDto;
 import charger.main.persistence.EVCarModelRepository;
 import charger.main.persistence.EvCarsRepository;
 import charger.main.persistence.FavoriteRepository;
 import charger.main.persistence.MemberRepository;
 import charger.main.persistence.StoreInfoRepository;
 import charger.main.persistence.UserCarInfoRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 @Service
 public class MemberService {
@@ -52,8 +57,13 @@ public class MemberService {
 	
 	@Autowired
 	UserCarInfoRepository userCarInfoRepository;
+	@Autowired
+	private PagedResourcesAssembler<MemberDto> pagedResourcesAssembler;
 	
 	PasswordEncoder encode = new BCryptPasswordEncoder();
+	
+	@PersistenceContext
+	private EntityManager em;
 	//회원가입
 	public void setUser(MemberDto dto) {
 		
@@ -235,20 +245,26 @@ public class MemberService {
 		favoriteRepo.save(favoriteStore);
 	}
 	
-	public List<MemberDto> getUsers() {
-		return memberRepo.findAll().stream()
+	public ResponseEntity<?> getUsers(Pageable pageable) {
+		
+		Page<Member> page = memberRepo.findAll(pageable);
+		
+		Page<MemberDto> memberDtoPage = page
 				.map(n-> MemberDto.builder()
 						.username(n.getUsername())
-						.nickname(n.getNickname())
-						.phoneNumber(n.getPhoneNumber())
-						.email(n.getEmail())
-						.sex(n.getSex())
-						.zipcode(n.getZipcode())
-						.roadAddr(n.getRoadAddr())
-						.detailAddr(n.getDetailAddr())
-						.enabled(n.isEnabled())
-						.createAt(n.getCreateAt())
-						.build())
-				.collect(Collectors.toList());
+					    .nickname(n.getNickname())
+					    .phoneNumber(n.getPhoneNumber())
+					    .email(n.getEmail())
+					    .sex(n.getSex())
+					    .role(n.getRole())
+					    .enabled(n.isEnabled())
+					    .zipcode(n.getZipcode())
+					    .roadAddr(n.getRoadAddr())
+					    .detailAddr(n.getDetailAddr())
+					    .createAt(n.getCreateAt())
+					    .build());
+		
+		PagedModel<EntityModel<MemberDto>> pagedModel = pagedResourcesAssembler.toModel(memberDtoPage);
+		return ResponseEntity.ok().body(pagedModel);
 	}
 }

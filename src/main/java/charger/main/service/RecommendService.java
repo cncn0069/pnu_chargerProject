@@ -6,6 +6,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -71,7 +72,7 @@ public class RecommendService {
 	@Autowired
 	private KakaoDirectionsService kakaoDirectionsService;
 	
-	public List<StoreResultsDto> getRecommendStore(CoorDinatesDto dto) {
+	public Set<StoreResultsDto> getRecommendStore(CoorDinatesDto dto) {
 		
 		GeoUtil geoUtil = new GeoUtil();
 		
@@ -104,10 +105,9 @@ public class RecommendService {
 		List<RouteSummaryDto> kakaoDis = broad.block();
 		List<List<EvStoreResultDto>> items = stores.block();
 		
-		
-		int bestChoice = Integer.MAX_VALUE;
-		int bbb = 0;
 		List<StoreResultsDto> result = new ArrayList<>();
+		
+		
 		//거리 + 예상 수요량 -> 순위 도출
 		for(int i = 0; i < kakaoDis.size();i++) {
 			RouteSummaryDto dm = kakaoDis.get(i);
@@ -191,21 +191,23 @@ public class RecommendService {
 				        resultDto.setPredTag("3");
 				        break;
 				}
-				if(resultDto.getMinute() < bestChoice) {
-					
-				}
-				
 				result.add(resultDto);
 			}
-			for(StoreResultsDto be : result) {
-				if(be.getMinute() < bestChoice)
-					bbb = i;
-			}
-			
 		}
-//		result.get(bbb).setBestChoice(true);
 		
-		return result;
+		int bestChoice = Integer.MAX_VALUE;
+		int bbb = 0;
+		for(int i =0 ; i < result.size();i++) {
+			if(result.get(i).getMinute() < bestChoice)
+			{
+				bbb = i;
+				bestChoice = result.get(i).getMinute();
+			}
+		}
+		
+		result.get(bbb).setBestChoice(true);
+		
+		return result.stream().collect(Collectors.toSet());
 	}
 }
 

@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -20,6 +22,7 @@ import charger.main.domain.Role;
 import charger.main.fillter.JWTAuthenticationFilter;
 import charger.main.fillter.JWTAuthorizationFilter;
 import charger.main.persistence.MemberRepository;
+import charger.main.service.ServiceUserDetailsService;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -41,7 +44,8 @@ public class SecurityConfig{
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
 		http.cors(cors->cors.configurationSource(corsSource()));
-//		http.cors(Customizer.withDefaults());
+//		http.userDetailsService(userDetailsService);
+		http.cors(Customizer.withDefaults());
 		http.authorizeHttpRequests(security->security
 				.requestMatchers("/member/**").authenticated()
 				.requestMatchers("/reserve/**").authenticated()
@@ -61,6 +65,7 @@ public class SecurityConfig{
 	 private CorsConfigurationSource corsSource() {
 		 CorsConfiguration config = new CorsConfiguration();
 		 config.addAllowedOrigin("http://localhost:3000");
+		 config.addAllowedOrigin("http://localhost:3000/login");
 		 config.addAllowedOrigin("http://localhost:3001");
 		 config.addAllowedOrigin("http://10.125.121.173:3001");
 		 config.addAllowedOrigin("http://10.125.121.173:3000");

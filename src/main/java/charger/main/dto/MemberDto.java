@@ -1,7 +1,9 @@
 package charger.main.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
+import charger.main.domain.Role;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,6 +33,7 @@ public class MemberDto {
     //아 사는곳 시도 코드
 	private String zipcode;
 	//도로명 주소
+	private List<Role> role;
 	private String roadAddr;
 	private String detailAddr;
     private boolean enabled;

@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import charger.main.domain.Member;
+import charger.main.domain.Role;
 import charger.main.persistence.MemberRepository;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,7 +34,11 @@ public class ServiceUserDetailsService implements UserDetailsService{
 		
 		return User.builder().username(member.getUsername())
 				.password(member.getPassword())
-				.authorities(AuthorityUtils.createAuthorityList(member.getRole().toString()))
+				.authorities(AuthorityUtils.createAuthorityList(member
+						 .getRole()
+						 .stream()
+						 .map(Role::name)
+						 .toArray(String[]::new)))
 				.disabled(!member.isEnabled())
 				.build();
 	}

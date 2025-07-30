@@ -42,4 +42,5 @@ public class InquiryBoard {
 	private LocalDateTime createdAt;
 	@Column(name="updated_at")
 	private LocalDateTime updatedAt;
+	private boolean enabled;
 }

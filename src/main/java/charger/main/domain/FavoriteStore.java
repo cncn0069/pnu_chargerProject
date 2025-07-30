@@ -9,6 +9,7 @@ import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
@@ -28,7 +29,9 @@ import lombok.ToString;
 @NoArgsConstructor
 @Entity
 @Table(
-		name = "favorite_store")
+		name = "favorite_store",indexes= {
+				@Index(name = "idx_username",columnList = "username")
+		})
 public class FavoriteStore {
 	@EmbeddedId
 	private FavoriteStoreId favoriteStoreId;

@@ -17,6 +17,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 
 import charger.main.domain.Member;
+import charger.main.domain.Role;
 import charger.main.persistence.MemberRepository;
 import charger.main.util.JWTUtil;
 import jakarta.servlet.FilterChain;
@@ -72,11 +73,11 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
 		
 		// 3. 토큰이 없거나 Bearer 형식이 아닐 경우 필터 패스
 		if (srcToken == null || srcToken.isBlank()) {
-		    filterChain.doFilter(request, response);
 		    log.info("토큰이 없거나 찾지 못함");
+		    sendErrorResponse(response, 401, "토큰이 없습니다.");
 		    return;
 		}
-		
+		srcToken = srcToken.replace("\"", "");
 		// 토큰 베어러 잘 못붙을 경우 대비
     	if (srcToken.startsWith("Bearer")) {
     		srcToken = srcToken.substring("Bearer".length()).trim();
@@ -109,11 +110,15 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
 	    }
 		Optional<Member> opt = mrp.findById(username);
 		if (!opt.isPresent()) {
-			filterChain.doFilter(request, response);
+			sendErrorResponse(response, 401, "존재하지 않는 사용자.");
 			return;
 		}
 		Member findMembers = opt.get();
-		User user = new User(findMembers.getUsername(),findMembers.getPassword(),AuthorityUtils.createAuthorityList(findMembers.getRole().toString()));
+		User user = new User(findMembers.getUsername(),findMembers.getPassword(),AuthorityUtils.createAuthorityList(findMembers
+				 .getRole()
+				 .stream()
+				 .map(Role::name)
+				 .toArray(String[]::new)));
 		Authentication authentication  = new UsernamePasswordAuthenticationToken(user, null,user.getAuthorities());
 
 		log.info("권한 인증 성공");

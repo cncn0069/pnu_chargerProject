@@ -3,6 +3,8 @@ package charger.main.domain;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.security.core.userdetails.UserDetails;
+
 import io.micrometer.common.lang.Nullable;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -12,7 +14,9 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,7 +31,7 @@ import lombok.ToString;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Member {
+public class Member{
 	@Id
 	private String username;
 	@Column(nullable = false)

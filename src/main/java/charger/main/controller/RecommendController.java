@@ -1,6 +1,7 @@
 package charger.main.controller;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,7 +19,7 @@ public class RecommendController {
 	RecommendService recommendService;
 	
 	@PostMapping("/recommend/car")
-	public List<StoreResultsDto> getRecommendStore(@RequestBody CoorDinatesDto dto) {
+	public Set<StoreResultsDto> getRecommendStore(@RequestBody CoorDinatesDto dto) {
 		
 		return recommendService.getRecommendStore(dto);
 	}
